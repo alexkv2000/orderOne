@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Order Target Indicators</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+<h1>Приказ #1:Целевые показатели (проверка XLS)</h1>
+<div th:if="${message}" style="color: green;">
+    <p th:text="${message}"></p>
+</div>
+<div th:if="${transferMessage}" style="color: red;">
+    <p th:text="${transferMessage}"></p>
+</div>
+
+<form action="#" th:action="@{/api/order/upload}" method="post" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".xlsx" required>
+    <button type="submit">Добавить XLS (к текущему списку)</button>
+</form>
+<h2>Main Indicators</h2>
+<button onclick="window.location.href='/api/order/clear'">Очистить список экрана</button>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Номер</th>
+        <th>Структура</th>
+        <th>Цель</th>
+        <th>Срок</th>
+        <th>Дивизион</th>
+        <th>Координатор</th>
+        <th>Ответственные</th>
+        <th>Дополнительные ответственные</th>
+        <th>Исполнитель</th>
+    </tr>
+    </thead>
+    <tbody>
+    <th:block th:if="${not #lists.isEmpty(indicators)}">
+    <tr th:each="indicator : ${indicators}">
+        <form th:action="@{/api/order/update/{id}(id=${indicator.id})}" method="post">
+            <td th:text="${indicator.id}"></td>
+            <td><input type="text" name="number" th:value="${indicator.number}"></td>
+            <td>
+                <select name="structure" th:if="${structures != null and not #lists.isEmpty(structures)}">
+                    <option th:each="structure : ${structures}"
+                            th:value="${structure}"
+                            th:text="${structure.name()}"
+                            th:selected="${structure == indicator.structure}"></option>
+                </select>
+
+            </td>
+            <td><input type="text" name="goal" th:value="${indicator.goal}"></td>
+            <td><input type="text" name="deadline" th:value="${indicator.deadline}"></td>
+            <td>
+                <select name="division" th:if="${divisions != null and not #lists.isEmpty(divisions)}">
+                    <option th:each="division : ${divisions}"
+                            th:value="${division}"
+                            th:text="${division.name()}"
+                            th:selected="${division == indicator.division}"></option>
+                </select>
+
+            </td>
+            <td><input type="text" name="coordinator" th:value="${indicator.coordinator}"></td>
+            <td><input type="text" name="responsibles" th:value="${indicator.responsibles}"></td>
+            <td><input type="text" name="additionalResponsibles" th:value="${indicator.additionalResponsibles}"></td>
+            <td><button type="submit">Обновить строку</button></td>
+        </form>
+    </tr>
+    </th:block>
+    </tbody>
+</table>
+<a th:href="@{/api/order/export/main}">Сохранить XLS</a>
+<h2>Ошибки XLS файла</h2>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Select</th>
+            <th>ID</th>
+            <th>ID</th>
+            <th>Номер</th>
+            <th>Структура</th>
+            <th>Цель</th>
+            <th>Срок</th>
+            <th>Дивизион</th>
+            <th>Координатор</th>
+            <th>Ответственные</th>
+            <th>Дополнительные ответственные</th>
+            <th>Error Reason</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <th:block th:if="${not #lists.isEmpty(errors)}">
+        <tr th:each="error : ${errors}">
+            <td><input type="checkbox" name="errorIds" th:value="${error.id}"></td>
+            <form th:action="@{/api/order/update-error/{id}(id=${error.id})}" method="post" style="display:inline;">
+                <td th:text="${error.id}"></td>
+                <td><input type="text" name="number" th:value="${error.number}"></td>
+                <td>
+                    <select name="structure" th:if="${structures != null and not #lists.isEmpty(structures)}">
+                        <option th:each="structure : ${structures}"
+                                th:value="${structure}"
+                                th:text="${structure.name()}"
+                                th:selected="${structure == error.structure}"></option>
+                    </select>
+
+                </td>
+                <td><input type="text" name="goal" th:value="${error.goal}"></td>
+                <td><input type="text" name="deadline" th:value="${error.deadline}"></td>
+                <td>
+                    <select name="division" th:if="${divisions != null and not #lists.isEmpty(divisions)}">
+                        <option th:each="division : ${divisions}"
+                                th:value="${division}"
+                                th:text="${division.name()}"
+                                th:selected="${division == error.division}"></option>
+                    </select>
+                </td>
+                <td><input type="text" name="coordinator" th:value="${error.coordinator}"></td>
+                <td><input type="text" name="responsibles" th:value="${error.responsibles}"></td>
+                <td><input type="text" name="additionalResponsibles" th:value="${error.additionalResponsibles}"></td>
+                <td th:text="${error.errorReason}"></td>
+                <td><button type="submit">Обновить строку</button></td>
+            </form>
+        </tr>
+        </th:block>
+        </tbody>
+    </table>
+<form action="#" th:action="@{/api/order/transfer}" method="post">
+    <button type="submit">Transfer в основной экран</button>
+</form>
+<a th:href="@{/api/order/export/errors}">Сохранить в XLS ошибку</a>
+<a th:href="@{/api/order/errors}">Страница просмотра ошибок</a>
+
+</body>
+</html>
