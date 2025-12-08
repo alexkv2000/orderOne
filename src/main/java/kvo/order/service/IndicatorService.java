@@ -1,6 +1,5 @@
 package kvo.order.service;
 
-
 import jakarta.transaction.Transactional;
 import kvo.order.model.ErrorIndicator;
 import kvo.order.model.TargetIndicator;
@@ -14,8 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -154,7 +153,7 @@ public class IndicatorService {
         targetRepo.deleteAll();
     }
 
-    @Transactional // Добавьте транзакцию, чтобы операции были атомарными (все или ничего)
+    @Transactional
     public void transferErrors(List<Long> errorIds) {
         if (errorIds == null || errorIds.isEmpty()) {
             throw new IllegalArgumentException("Список ID ошибок пустой или null");
@@ -164,7 +163,6 @@ public class IndicatorService {
             ErrorIndicator error = errorRepo.findById(id).orElseThrow(() ->
                     new RuntimeException("Ошибка с ID " + id + " не найдена"));
 
-            // Создание нового TargetIndicator на основе ErrorIndicator
             TargetIndicator indicator = new TargetIndicator();
             indicator.setNumber(error.getNumber());
             indicator.setStructure(error.getStructure());
@@ -175,20 +173,88 @@ public class IndicatorService {
             indicator.setResponsibles(error.getResponsibles());
             indicator.setAdditionalResponsibles(error.getAdditionalResponsibles());
 
-            // Сохранение нового индикатора
             targetRepo.save(indicator);
-
-            // Удаление ошибки (после успешного сохранения)
             errorRepo.delete(error);
         }
     }
 
-    public void updateIndicator(TargetIndicator indicator) {
-        targetRepo.save(indicator);
+    public TargetIndicator updateIndicator(Long id, TargetIndicator indicatorData) {
+        Optional<TargetIndicator> optionalIndicator = targetRepo.findById(id);
+
+        if (optionalIndicator.isPresent()) {
+            TargetIndicator indicator = optionalIndicator.get();
+
+            // Обновляем только необходимые поля
+            if (indicatorData.getNumber() != null) {
+                indicator.setNumber(indicatorData.getNumber());
+            }
+            if (indicatorData.getStructure() != null) {
+                indicator.setStructure(indicatorData.getStructure());
+            }
+            if (indicatorData.getGoal() != null) {
+                indicator.setGoal(indicatorData.getGoal());
+            }
+            if (indicatorData.getDeadline() != null) {
+                indicator.setDeadline(indicatorData.getDeadline());
+            }
+            if (indicatorData.getDivision() != null) {
+                indicator.setDivision(indicatorData.getDivision());
+            }
+            if (indicatorData.getCoordinator() != null) {
+                indicator.setCoordinator(indicatorData.getCoordinator());
+            }
+            if (indicatorData.getResponsibles() != null) {
+                indicator.setResponsibles(indicatorData.getResponsibles());
+            }
+            if (indicatorData.getAdditionalResponsibles() != null) {
+                indicator.setAdditionalResponsibles(indicatorData.getAdditionalResponsibles());
+            }
+
+            return targetRepo.save(indicator);
+        } else {
+            throw new RuntimeException("Indicator with id " + id + " not found");
+        }
     }
 
-    public void updateError(ErrorIndicator error) {
-        errorRepo.save(error);
+    public ErrorIndicator updateError(Long id, ErrorIndicator errorData) {
+        Optional<ErrorIndicator> optionalError = errorRepo.findById(id);
+
+        if (optionalError.isPresent()) {
+            ErrorIndicator error = optionalError.get();
+
+            // Обновляем только необходимые поля
+            if (errorData.getNumber() != null) {
+                error.setNumber(errorData.getNumber());
+            }
+            if (errorData.getStructure() != null) {
+                error.setStructure(errorData.getStructure());
+            }
+            if (errorData.getGoal() != null) {
+                error.setGoal(errorData.getGoal());
+            }
+            if (errorData.getDeadline() != null) {
+                error.setDeadline(errorData.getDeadline());
+            }
+            if (errorData.getDivision() != null) {
+                error.setDivision(errorData.getDivision());
+            }
+            if (errorData.getCoordinator() != null) {
+                error.setCoordinator(errorData.getCoordinator());
+            }
+            if (errorData.getResponsibles() != null) {
+                error.setResponsibles(errorData.getResponsibles());
+            }
+            if (errorData.getAdditionalResponsibles() != null) {
+                error.setAdditionalResponsibles(errorData.getAdditionalResponsibles());
+            }
+            if (errorData.getErrorReason() != null) {
+                error.setErrorReason(errorData.getErrorReason());
+            }
+
+            return errorRepo.save(error);
+        } else {
+            throw new RuntimeException("Error with id " + id + " not found");
+        }
     }
 
     public byte[] exportToXls(String type) throws IOException {
@@ -222,7 +288,7 @@ public class IndicatorService {
             } else {
                 ErrorIndicator err = (ErrorIndicator) obj;
                 row.createCell(0).setCellValue(err.getNumber());
-                row.createCell(1).setCellValue(err.getStructure().toString());  // Или "Не указано"
+                row.createCell(1).setCellValue(err.getStructure().toString());
                 row.createCell(2).setCellValue(err.getGoal());
                 row.createCell(3).setCellValue(err.getDeadline());
                 row.createCell(4).setCellValue(err.getDivision().toString());
@@ -238,4 +304,3 @@ public class IndicatorService {
         return out.toByteArray();
     }
 }
-

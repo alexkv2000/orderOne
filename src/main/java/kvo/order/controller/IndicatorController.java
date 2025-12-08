@@ -15,28 +15,43 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 @Controller
-@RequestMapping("/api/order")
+@RequestMapping("/api/order") // Базовый путь для API
 public class IndicatorController {
     private static final Logger logger = LoggerFactory.getLogger(IndicatorController.class);
+
     @Autowired
     private IndicatorService service;
 
-    @GetMapping
+    // JSON API endpoint для получения всех данных
+    @GetMapping("/data")
+    @ResponseBody
+    public Map<String, Object> getData() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("indicators", service.getAllIndicators());
+        data.put("errors", service.getAllErrors());
+        data.put("structures", TargetIndicator.Structure.values());
+        data.put("divisions", TargetIndicator.Division.values());
+        return data;
+    }
+
+    // Обрабатываем два пути: корневой /order и /api/order
+    @GetMapping({"", "/", "/order"})
     public String showOrderPage(Model model) {
         logger.info("Indicators size: {}", service.getAllIndicators().size());
         logger.info("Errors size: {}", service.getAllErrors().size());
-        List<ErrorIndicator> indicators_err = service.getAllErrors();  // Или ваш метод загрузки
+
+        List<ErrorIndicator> indicators_err = service.getAllErrors();
         indicators_err = indicators_err.stream()
-                .filter(Objects::nonNull)  // Фильтруем null
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
         List<TargetIndicator> indicators_ind = service.getAllIndicators();
         model.addAttribute("indicators", indicators_ind);
         model.addAttribute("errors", indicators_err);
@@ -45,70 +60,83 @@ public class IndicatorController {
         return "order";
     }
 
+    // JSON API для загрузки файла
     @PostMapping("/upload")
-    public String uploadFile(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes, Model model) {
+    @ResponseBody
+    public Map<String, Object> uploadFile(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> response = new HashMap<>();
         try {
             if (!file.getOriginalFilename().endsWith(".xlsx")) {
-                redirectAttributes.addFlashAttribute("message", "Only .xlsx files are allowed!");
-                return "redirect:/api/order";
+                response.put("success", false);
+                response.put("message", "Only .xlsx files are allowed!");
+                return response;
             }
+
             service.importFromXls(file);
-            redirectAttributes.addFlashAttribute("message", "File uploaded successfully!");
+            response.put("success", true);
+            response.put("message", "File uploaded successfully!");
         } catch (IOException e) {
             logger.error("Error during file upload: ", e);
-            redirectAttributes.addFlashAttribute("message", "Error uploading file: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Error uploading file: " + e.getMessage());
         }
-        model.addAttribute("indicators", service.getAllIndicators());
-        model.addAttribute("errors", service.getAllErrors());
-        model.addAttribute("structures", TargetIndicator.Structure.values());
-        model.addAttribute("divisions", TargetIndicator.Division.values());
-        model.addAttribute("message", "Файл загружен успешно!");
-        return "redirect:/api/order";
+        return response;
     }
 
-//    @PostMapping("/transfer")
-//    public String transferErrors(@RequestParam("errorIds") List<Long> errorIds, RedirectAttributes redirectAttributes) {
-////        service.transferErrors(errorIds);
-//        redirectAttributes.addFlashAttribute("message", "Errors transferred successfully!");
-//        return "redirect:/api/order";
-//    }
+    // JSON API для переноса ошибок
     @PostMapping("/transfer")
-    public String transferErrors(@RequestParam(value = "errorIds", required = false) List<Long> errorIds, Model model) {
+    @ResponseBody
+    public Map<String, Object> transferErrors(@RequestBody List<Long> errorIds) {
+        Map<String, Object> response = new HashMap<>();
+
         if (errorIds == null || errorIds.isEmpty()) {
-            // Добавляем сообщение об ошибке в модель
-            model.addAttribute("transferMessage", "Ошибка: Выберите хотя бы одну строку из (Ошибки XLS файла) для переноса в основной экран.");
-            // Перезагружаем данные страницы (чтобы отобразить сообщение)
-            model.addAttribute("indicators", service.getAllIndicators()); // Или ваш метод для получения indicators
-            model.addAttribute("errors", service.getAllErrors()); // Или ваш метод для получения errors
-            model.addAttribute("structures", TargetIndicator.Structure.values()); // Если нужно
-            model.addAttribute("divisions", TargetIndicator.Division.values()); // Если нужно
-            return "order"; // Возврат на ту же страницу с сообщением
+            response.put("success", false);
+            response.put("message", "Ошибка: Выберите хотя бы одну строку для переноса.");
+            return response;
         }
-        // Раскомментируем и выполняем логику переноса
-        service.transferErrors(errorIds);
-        // После успешного переноса перенаправляем обратно с сообщением
-        model.addAttribute("message", "Ошибки успешно перенесены в основной экран.");
-        model.addAttribute("indicators", service.getAllIndicators());
-        model.addAttribute("errors", service.getAllErrors());
-        model.addAttribute("structures", TargetIndicator.Structure.values());
-        model.addAttribute("divisions", TargetIndicator.Division.values());
-        return "order";
+
+        try {
+            service.transferErrors(errorIds);
+            response.put("success", true);
+            response.put("message", "Ошибки успешно перенесены в основной экран.");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Произошла ошибка при переносе: " + e.getMessage());
+        }
+        return response;
     }
 
+    // JSON API для обновления индикатора
     @PostMapping("/update/{id}")
-    public String updateIndicator(@PathVariable Long id, @ModelAttribute TargetIndicator indicator, RedirectAttributes redirectAttributes) {
-        indicator.setId(id);
-        service.updateIndicator(indicator);
-        redirectAttributes.addFlashAttribute("message", "Indicator updated!");
-        return "redirect:/api/order";
+    @ResponseBody
+    public Map<String, Object> updateIndicator(@PathVariable Long id, TargetIndicator indicator) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            service.updateIndicator(id, indicator);
+            response.put("success", true);
+            response.put("message", "Indicator updated successfully");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+        }
+        return response;
     }
 
+    // JSON API для обновления ошибки
     @PostMapping("/update-error/{id}")
-    public String updateError(@PathVariable Long id, @ModelAttribute ErrorIndicator error, RedirectAttributes redirectAttributes) {
-        error.setId(id);
-        service.updateError(error);
-        redirectAttributes.addFlashAttribute("message", "Error updated!");
-        return "redirect:/api/order";
+    @ResponseBody
+    public Map<String, Object> updateError(@PathVariable Long id, ErrorIndicator error) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            error.setId(id);
+            service.updateError(id, error);
+            response.put("success", true);
+            response.put("message", "Error updated successfully");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+        }
+        return response;
     }
 
     @GetMapping("/export/{type}")
@@ -125,12 +153,20 @@ public class IndicatorController {
         model.addAttribute("errors", service.getAllErrors());
         return "errors";
     }
-    @GetMapping("/clear")
-    public String clearIndicators(Model model) {
-        // Очищаем indicators (делаем пустым списком)
-        service.deleteAllIndicators();
-        model.addAttribute("message", "Экран очищен. Indicators удалены.");
 
-        return "redirect:/api/order";  // Возвращаем тот же шаблон
+    // JSON API для очистки списка
+    @PostMapping("/clear")
+    @ResponseBody
+    public Map<String, Object> clearIndicators() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            service.deleteAllIndicators();
+            response.put("success", true);
+            response.put("message", "Экран очищен. Indicators удалены.");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Ошибка при очистке: " + e.getMessage());
+        }
+        return response;
     }
 }

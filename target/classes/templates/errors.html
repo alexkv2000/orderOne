@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Error Indicators</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+<h1>Error Indicators</h1>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Номер</th>
+        <th>Структура</th>
+        <th>Цель</th>
+        <th>Срок</th>
+        <th>Дивизион</th>
+        <th>Координатор</th>
+        <th>Ответственные</th>
+        <th>Дополнительные ответственные</th>
+        <th>Error Reason</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="error : ${errors}">
+        <td th:text="${error.id}"></td>
+        <td th:text="${error.number}"></td>
+        <td th:text="${error.structure}"></td>
+        <td th:text="${error.goal}"></td>
+        <td th:text="${error.deadline}"></td>
+        <td th:text="${error.division}"></td>
+        <td th:text="${error.coordinator}"></td>
+        <td th:text="${error.responsibles}"></td>
+        <td th:text="${error.additionalResponsibles}"></td>
+        <td th:text="${error.errorReason}"></td>
+    </tr>
+    </tbody>
+</table>
+<a th:href="@{/api/order}">Back to Main</a>
+</body>
+</html>
