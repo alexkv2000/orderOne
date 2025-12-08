@@ -59,11 +59,6 @@ public class TargetIndicator {
         String[] bParts = b.split("\\.");
         int len = Math.max(aParts.length, bParts.length);
         for (int i = 0; i < len; i++) {
-//            int aPart = i < aParts.length ? Integer.parseInt(aParts[i]) : 0;
-//            int bPart = i < bParts.length ? Integer.parseInt(bParts[i]) : 0;
-//            if (aPart != bPart) return Integer.compare(aPart, bPart);
-//        }
-//        return 0;
             int aPart = 0;
             int bPart = 0;
             try {

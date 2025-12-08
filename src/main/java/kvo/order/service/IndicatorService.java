@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -41,37 +42,85 @@ public class IndicatorService {
 
                 if (row.getRowNum() == 0) continue; // Skip header
                 TargetIndicator indicator = new TargetIndicator();
-                indicator.setNumber(getCellValue(row.getCell(0)));
 
-                if (getCellValue(row.getCell(1)).equals("Цель") ||
-                        getCellValue(row.getCell(1)).equals("Подцель") ||
-                        getCellValue(row.getCell(1)).equals("Задача")) {
+                String numberValue = getCellValue(row.getCell(0));
+                // Проверяем, заканчивается ли на точку
+                if (numberValue == null || numberValue.trim().isEmpty()) {
+                    err_message.append("Пустое значение номера в строке ").append(row.getRowNum() + 1).append("; ");
+                    err = true;
+                } else if (numberValue != null && !numberValue.trim().isEmpty() && !numberValue.endsWith(".")) {
+                    numberValue = numberValue + "."; // Добавляем точку
+                }
+
+                if (numberValue != null && !numberValue.trim().isEmpty()) {
+// Разделяем по точкам
+                    String[] numberParts = numberValue.split("\\.");
+
+                    for (String part : numberParts) {
+                        String trimmedPart = part.trim();
+                        // Проверяем, что каждая часть является числом (содержит только цифры)
+                        if (!trimmedPart.isEmpty() && !trimmedPart.matches("\\d+")) {
+                            err = true;
+                            err_message.append("Ошибка_ожидается число");
+                            break; // Прерываем цикл при первой ошибке
+                        }
+                    }
+                }
+                indicator.setNumber(numberValue);
+
+                // ПРОВЕРКА: если есть число до первой точки, то ячейка 1 должна быть "Цель"
+                if (numberValue != null && !numberValue.trim().isEmpty()) {
+                    // Извлекаем число до первой точки
+                    String[] parts = numberValue.split("\\.");
+                    String numberBeforeDot = parts[0].trim();
+
+                    // Проверяем, что это число (содержит только цифры)
+                    if (numberBeforeDot.matches("\\d+") && (parts.length==1)) {
+                        String cell1Value = getCellValue(row.getCell(1));
+
+                        // Проверяем, что ячейка 1 содержит "Цель"
+                        if (cell1Value == null || !"Цель".equals(cell1Value.trim())) {
+                            err = true;
+                            err_message.append("|Ошибка_ожидается_Цель_вместо_").append(cell1Value);
+                        }
+                    }
+                }
+                String stringStructure = getCellValue(row.getCell(1));
+                if (stringStructure == null || stringStructure.trim().isEmpty()) {
+                    err_message.append("Пустое значение номера в строке ").append(row.getRowNum() + 1).append("; ");
+                    indicator.setStructure(TargetIndicator.Structure.error);
+                    err = true;
+                } else if (stringStructure.equals("Цель") ||
+                        stringStructure.equals("Подцель") ||
+                        stringStructure.equals("Задача")) {
                     try {
-                        indicator.setStructure(TargetIndicator.Structure.valueOf(getCellValue(row.getCell(1))));
+                        indicator.setStructure(TargetIndicator.Structure.valueOf(stringStructure));
                     } catch (Exception e) {
-                        System.out.println("!!!! invalid_structure - " + e.toString());
+                        System.out.println("!!!! Ошибка_структары - " + e.toString());
                         err = true;
                         indicator.setStructure(TargetIndicator.Structure.error);
-                        err_message.append("invalid_structure");
+                        err_message.append("Ошибка_структары");
                     }
                 } else {
                     err = true;
                     indicator.setStructure(TargetIndicator.Structure.error);
-                    err_message.append("|invalid_structure");
+                    err_message.append("|Ошибка_структары");
                 }
 
                 try {
-                    indicator.setGoal(getCellValue(row.getCell(2)));
+//                    indicator.setGoal(getCellValue(row.getCell(2)));
+                    String dateValue = getFormattedDateCellValue(row.getCell(2));
+                    indicator.setGoal(dateValue);
                 } catch (IllegalArgumentException e) {
                     err = true;
-                    err_message.append("|invalid_goal");
+                    err_message.append("|Нет цели");
                     indicator.setGoal("Нет цели");
                 }
                 try {
                     indicator.setDeadline(getCellValue(row.getCell(3)));
                 } catch (IllegalArgumentException e) {
                     err = true;
-                    err_message.append("|invalid_deadline");
+                    err_message.append("|Ошибка_даты");
                     indicator.setDeadline("Нет даты");
                 }
                 try {
@@ -79,27 +128,35 @@ public class IndicatorService {
                 } catch (IllegalArgumentException e) {
                     err = true;
                     indicator.setDivision(TargetIndicator.Division.error);
-                    err_message.append("|invalid_division");
+                    err_message.append("|Ошибка_диизиона");
                 }
 
                 String coord = getCellValue(row.getCell(5));
-                if (!validateEmails(coord)) {
+                // Для координатора пустое значение допустимо, проверяем только если не пусто
+                if (coord == null || coord.trim().isEmpty()) {
                     err = true;
-                    err_message.append("|invalid_email_coordinate");
+                    err_message.append("|Нет координатора");
+                } else if (!validateEmails(coord)) {
+                    err = true;
+                    err_message.append("|Ошибка_email_координатор");
                 }
                 indicator.setCoordinator(coord);
 
-
                 String resp = getCellValue(row.getCell(6));
-                if (!validateEmails(resp)) {
+                // Ответственные - обязательное поле
+                if (resp == null || resp.trim().isEmpty()) {
                     err = true;
-                    err_message.append("|invalid_email_responsible");
+                    err_message.append("|Нет ответственного");
+                } else if (!validateMultipleEmails(resp)) {
+                    err = true;
+                    err_message.append("|Ошибка_email_ответственный");
                 }
                 indicator.setResponsibles(resp);
 
                 String addResp = getCellValue(row.getCell(7));
-                if (!validateEmails(addResp)) {
-                    err_message.append("|invalid_email_additionalResponsible");
+                // Дополнительные ответственные - обязательное поле
+                if (!validateMultipleEmails(addResp)) {
+                    err_message.append("|Нет_email_доп_ответственный");
                 }
                 indicator.setAdditionalResponsibles(addResp);
 
@@ -111,6 +168,27 @@ public class IndicatorService {
             }
             workbook.close();
         }
+    }
+
+    // Метод для проверки нескольких email в одной строке
+    private boolean validateMultipleEmails(String emails) {
+        if (emails == null || emails.isEmpty()) return false;
+
+        // Разделяем строку по различным разделителям
+        String[] emailArray = emails.split("[,\\s;]+");
+
+        for (String email : emailArray) {
+            String trimmedEmail = email.trim();
+            if (!trimmedEmail.isEmpty() && !isValidEmail(trimmedEmail)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Метод для проверки одного email
+    private boolean isValidEmail(String email) {
+        return EMAIL_PATTERN.matcher(email).matches();
     }
 
     private void saveError(TargetIndicator indicator, String reason) {
@@ -128,12 +206,56 @@ public class IndicatorService {
     }
 
     private String getCellValue(Cell cell) {
-        if (cell == null) return "";
-        return cell.getCellType() == CellType.STRING ? cell.getStringCellValue() : String.valueOf((int) cell.getNumericCellValue());
+        if (cell == null) {
+            return null;
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    // Правильное форматирование даты в dd-MM-yyyy
+                    SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+                    return dateFormat.format(cell.getDateCellValue());
+                } else {
+                    // Для числовых значений убираем десятичную часть если она .0
+                    double numericValue = cell.getNumericCellValue();
+                    if (numericValue == Math.floor(numericValue)) {
+                        return String.valueOf((int) numericValue);
+                    } else {
+                        return String.valueOf(numericValue);
+                    }
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                // Для формул тоже нужно обработать даты
+                try {
+                    if (DateUtil.isCellDateFormatted(cell)) {
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+                        return dateFormat.format(cell.getDateCellValue());
+                    } else {
+                        return cell.getStringCellValue();
+                    }
+                } catch (Exception e) {
+                    return cell.getCellFormula();
+                }
+            default:
+                return null;
+        }
     }
-
+    private String getFormattedDateCellValue(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+            return dateFormat.format(cell.getDateCellValue());
+        }
+        return getCellValue(cell); // Для не-дат используем обычный метод
+    }
     private boolean validateEmails(String emails) {
-        if (emails == null || emails.isEmpty()) return true;
+        if (emails == null || emails.isEmpty()) return false;
         String[] emailArray = emails.split(",");
         for (String email : emailArray) {
             if (!EMAIL_PATTERN.matcher(email.trim()).matches()) return false;
