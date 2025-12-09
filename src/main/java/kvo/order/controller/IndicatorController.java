@@ -109,7 +109,7 @@ public class IndicatorController {
     // JSON API для обновления индикатора
     @PostMapping("/update/{id}")
     @ResponseBody
-    public Map<String, Object> updateIndicator(@PathVariable Long id, TargetIndicator indicator) {
+    public Map<String, Object> updateIndicator(@PathVariable Long id, @RequestBody TargetIndicator indicator) {
         Map<String, Object> response = new HashMap<>();
         try {
             service.updateIndicator(id, indicator);
@@ -122,10 +122,11 @@ public class IndicatorController {
         return response;
     }
 
+
     // JSON API для обновления ошибки
     @PostMapping("/update-error/{id}")
     @ResponseBody
-    public Map<String, Object> updateError(@PathVariable Long id, ErrorIndicator error) {
+    public Map<String, Object> updateError(@PathVariable Long id, @RequestBody ErrorIndicator error) {
         Map<String, Object> response = new HashMap<>();
         try {
             error.setId(id);

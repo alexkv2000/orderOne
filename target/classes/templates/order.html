@@ -9,6 +9,29 @@
         .error-row { background-color: #ffebee; }
         .form-inline { display: inline; }
         .hidden { display: none; }
+
+        .number-col { width: 3%; min-width: 70px; }
+        .level-col { width: 3%; min-width: 70px; }
+        .goal-col { width: 30%; min-width: 300px; }
+        .structure-col { width: 8%; min-width: 120px; }
+        .deadline-col { width: 5%; min-width: 100px; }
+        .division-col { width: 8%; min-width: 140px; }
+        .owner-col { width: 8%; min-width: 140px; }
+        .coordinator-col { width: 8%; min-width: 140px; }
+        .responsibles-col { width: 10%; min-width: 160px; }
+        .additional-responsibles-col { width: 10%; min-width: 160px; }
+        .business-col { width: 8%; min-width: 140px; }
+        .actions-col { width: 5%; min-width: 100px; }
+
+        /* Для таблицы ошибок добавлены дополнительные колонки */
+        .error-reason-col { width: 15%; min-width: 200px; }
+        .error-select-col { width: 3%; min-width: 50px; }
+
+        /* Стили для input и select внутри ячеек */
+        td input[type="text"],
+        td select {
+            width: 100%;
+            box-sizing: border-box;
     </style>
 </head>
 <body>
@@ -26,16 +49,19 @@
 <table id="mainTable">
     <thead>
     <tr>
-        <th>ID</th>
-        <th>Номер</th>
-        <th>Структура</th>
-        <th>Цель</th>
-        <th>Срок</th>
-        <th>Дивизион</th>
-        <th>Координатор</th>
-        <th>Ответственные</th>
-        <th>Дополнительные ответственные</th>
-        <th>Действия</th>
+        <th class="number-col">ID</th>
+        <th class="number-col">Номер</th>
+        <th class="structure-col">Структура</th>
+        <th class="level-col">Уровень</th>
+        <th class="goal-col">Цель</th>
+        <th class="deadline-col">Срок</th>
+        <th class="division-col">Дивизион</th>
+        <th class="owner-col">Владелец</th>
+        <th class="coordinator-col">Координатор</th>
+        <th class="responsibles-col">Ответственные</th>
+        <th class="additional-responsibles-col">Доп. ответственные</th>
+        <th class="business-col">Бизнес</th>
+        <th class="actions-col">Действия</th>
     </tr>
     </thead>
     <tbody id="mainTableBody">
@@ -50,18 +76,21 @@
     <table id="errorTable">
         <thead>
         <tr>
-            <th>Select</th>
-            <th>ID</th>
-            <th>Номер</th>
-            <th>Структура</th>
-            <th>Цель</th>
-            <th>Срок</th>
-            <th>Дивизион</th>
-            <th>Координатор</th>
-            <th>Ответственные</th>
-            <th>Доп. ответственные</th>
-            <th>Причина ошибки</th>
-            <th>Действия</th>
+            <th class="error-select-col">Select</th>
+            <th class="number-col">ID</th>
+            <th class="number-col">Номер</th>
+            <th class="structure-col">Структура</th>
+            <th class="level-col">Уровень</th>
+            <th class="goal-col">Цель</th>
+            <th class="deadline-col">Срок</th>
+            <th class="division-col">Дивизион</th>
+            <th class="owner-col">Владелец</th>
+            <th class="coordinator-col">Координатор</th>
+            <th class="responsibles-col">Ответственные</th>
+            <th class="additional-responsibles-col">Доп. ответственные</th>
+            <th class="business-col">Бизнес</th>
+            <th class="error-reason-col">Причина ошибки</th>
+            <th class="actions-col">Действия</th>
         </tr>
         </thead>
         <tbody id="errorTableBody">
@@ -132,6 +161,13 @@
 
         indicators.forEach(indicator => {
             const row = document.createElement('tr');
+
+            // Добавляем пустую строку в селект дивизиона
+            let divisionValue = indicator.division || '';
+            if (divisionValue === 'EMPTY' || divisionValue === 'empty') {
+                divisionValue = '';
+            }
+
             row.innerHTML = `
             <td>${indicator.id}</td>
             <td><input type="text" name="number" value="${indicator.number || ''}"></td>
@@ -140,16 +176,19 @@
                     ${renderOptions(structures, indicator.structure)}
                 </select>
             </td>
+            <td><input type="text" name="level" value="${indicator.level || ''}"></td>
             <td><input type="text" name="goal" value="${indicator.goal || ''}"></td>
             <td><input type="text" name="deadline" value="${indicator.deadline || ''}"></td>
             <td>
                 <select name="division">
-                    ${renderOptions(divisions, indicator.division)}
+                    ${renderOptionsWithEmpty(divisions, divisionValue)}
                 </select>
             </td>
+            <td><input type="text" name="owner" value="${indicator.owner || ''}"></td>
             <td><input type="text" name="coordinator" value="${indicator.coordinator || ''}"></td>
             <td><input type="text" name="responsibles" value="${indicator.responsibles || ''}"></td>
             <td><input type="text" name="additionalResponsibles" value="${indicator.additionalResponsibles || ''}"></td>
+            <td><input type="text" name="business" value="${indicator.business || ''}"></td>
             <td>
                 <button onclick="updateIndicator(${indicator.id}, this.parentNode.parentNode)">Обновить</button>
             </td>
@@ -165,6 +204,12 @@
         errors.forEach(error => {
             const row = document.createElement('tr');
             row.className = 'error-row';
+
+            let divisionValue = error.division || '';
+            if (divisionValue === 'EMPTY' || divisionValue === 'empty') {
+                divisionValue = '';
+            }
+
             row.innerHTML = `
             <td><input type="checkbox" name="errorIds" value="${error.id}"></td>
             <td>${error.id}</td>
@@ -174,16 +219,19 @@
                     ${renderOptions(structures, error.structure)}
                 </select>
             </td>
+            <td><input type="text" name="level" value="${error.level || ''}"></td>
             <td><input type="text" name="goal" value="${error.goal || ''}"></td>
             <td><input type="text" name="deadline" value="${error.deadline || ''}"></td>
             <td>
                 <select name="division">
-                    ${renderOptions(divisions, error.division)}
+                    ${renderOptionsWithEmpty(divisions, divisionValue)}
                 </select>
             </td>
+            <td><input type="text" name="owner" value="${error.owner || ''}"></td>
             <td><input type="text" name="coordinator" value="${error.coordinator || ''}"></td>
             <td><input type="text" name="responsibles" value="${error.responsibles || ''}"></td>
             <td><input type="text" name="additionalResponsibles" value="${error.additionalResponsibles || ''}"></td>
+            <td><input type="text" name="business" value="${error.business || ''}"></td>
             <td>${error.errorReason || ''}</td>
             <td>
                 <button onclick="updateError(${error.id}, this.parentNode.parentNode)">Обновить</button>
@@ -200,26 +248,49 @@
         }).join('');
     }
 
+    function renderOptionsWithEmpty(options, selectedValue) {
+        let result = '';
+
+        // Добавляем пустую опцию
+        const emptySelected = (selectedValue === '' || selectedValue === null) ? 'selected' : '';
+        result += `<option value="" ${emptySelected}></option>`;
+
+        // Добавляем остальные опции
+        options.forEach(option => {
+            const selected = option === selectedValue ? 'selected' : '';
+            result += `<option value="${option}" ${selected}>${option}</option>`;
+        });
+
+        return result;
+    }
+
     function updateIndicator(id, row) {
-        const formData = new FormData();
-        formData.append('number', row.querySelector('input[name="number"]').value);
-        formData.append('structure', row.querySelector('select[name="structure"]').value);
-        formData.append('goal', row.querySelector('input[name="goal"]').value);
-        formData.append('deadline', row.querySelector('input[name="deadline"]').value);
-        formData.append('division', row.querySelector('select[name="division"]').value);
-        formData.append('coordinator', row.querySelector('input[name="coordinator"]').value);
-        formData.append('responsibles', row.querySelector('input[name="responsibles"]').value);
-        formData.append('additionalResponsibles', row.querySelector('input[name="additionalResponsibles"]').value);
+        const data = {
+            number: row.querySelector('input[name="number"]').value,
+            structure: row.querySelector('select[name="structure"]').value || '',
+            level: row.querySelector('input[name="level"]').value || '',
+            goal: row.querySelector('input[name="goal"]').value,
+            deadline: row.querySelector('input[name="deadline"]').value || '',
+            division: row.querySelector('select[name="division"]').value || '',
+            owner: row.querySelector('input[name="owner"]').value || '',
+            coordinator: row.querySelector('input[name="coordinator"]').value || '',
+            responsibles: row.querySelector('input[name="responsibles"]').value || '',
+            additionalResponsibles: row.querySelector('input[name="additionalResponsibles"]').value || '',
+            business: row.querySelector('input[name="business"]').value || ''
+        };
 
         fetch(`/api/order/update/${id}`, {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
         })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     showMessage('Данные успешно обновлены', 'message');
-                    loadInitialData(); // Перезагружаем данные
+                    loadInitialData();
                 } else {
                     showMessage('Ошибка при обновлении данных: ' + data.message, 'transferMessage');
                 }
@@ -231,25 +302,32 @@
     }
 
     function updateError(id, row) {
-        const formData = new FormData();
-        formData.append('number', row.querySelector('input[name="number"]').value);
-        formData.append('structure', row.querySelector('select[name="structure"]').value);
-        formData.append('goal', row.querySelector('input[name="goal"]').value);
-        formData.append('deadline', row.querySelector('input[name="deadline"]').value);
-        formData.append('division', row.querySelector('select[name="division"]').value);
-        formData.append('coordinator', row.querySelector('input[name="coordinator"]').value);
-        formData.append('responsibles', row.querySelector('input[name="responsibles"]').value);
-        formData.append('additionalResponsibles', row.querySelector('input[name="additionalResponsibles"]').value);
+        const data = {
+            number: row.querySelector('input[name="number"]').value,
+            structure: row.querySelector('select[name="structure"]').value || '',
+            level: row.querySelector('input[name="level"]').value || '',
+            goal: row.querySelector('input[name="goal"]').value,
+            deadline: row.querySelector('input[name="deadline"]').value || '',
+            division: row.querySelector('select[name="division"]').value || '',
+            owner: row.querySelector('input[name="owner"]').value || '',
+            coordinator: row.querySelector('input[name="coordinator"]').value || '',
+            responsibles: row.querySelector('input[name="responsibles"]').value || '',
+            additionalResponsibles: row.querySelector('input[name="additionalResponsibles"]').value || '',
+            business: row.querySelector('input[name="business"]').value  || ''
+        };
 
         fetch(`/api/order/update-error/${id}`, {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
         })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     showMessage('Данные ошибки успешно обновлены', 'message');
-                    loadInitialData(); // Перезагружаем данные
+                    loadInitialData();
                 } else {
                     showMessage('Ошибка при обновлении данных ошибки: ' + data.message, 'transferMessage');
                 }

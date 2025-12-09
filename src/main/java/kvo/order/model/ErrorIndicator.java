@@ -10,13 +10,16 @@ public class ErrorIndicator {
     private String number;
     @Enumerated(EnumType.STRING)
     private TargetIndicator.Structure structure;
+    private String level;
     private String goal;
     private String deadline;
     @Enumerated(EnumType.STRING)
     private TargetIndicator.Division division;
+    private String owner;
     private String coordinator;
     private String responsibles;
     private String additionalResponsibles;
+    private String business;
     private String status = "error";
     private String errorReason;
     private Long originalId;
@@ -28,18 +31,24 @@ public class ErrorIndicator {
     public void setNumber(String number) { this.number = number; }
     public TargetIndicator.Structure getStructure() { return structure; }
     public void setStructure(TargetIndicator.Structure structure) { this.structure = structure; }
+    public String getLevel() { return level; }
+    public void setLevel(String level) { this.level = level; }
     public String getGoal() { return goal; }
     public void setGoal(String goal) { this.goal = goal; }
     public String getDeadline() { return deadline; }
     public void setDeadline(String deadline) { this.deadline = deadline; }
     public TargetIndicator.Division getDivision() { return division; }
     public void setDivision(TargetIndicator.Division division) { this.division = division; }
+    public String getOwner() { return owner; }
+    public void setOwner(String owner) { this.owner = owner; }
     public String getCoordinator() { return coordinator; }
     public void setCoordinator(String coordinator) { this.coordinator = coordinator; }
     public String getResponsibles() { return responsibles; }
     public void setResponsibles(String responsibles) { this.responsibles = responsibles; }
     public String getAdditionalResponsibles() { return additionalResponsibles; }
     public void setAdditionalResponsibles(String additionalResponsibles) { this.additionalResponsibles = additionalResponsibles; }
+    public String getBusiness() { return business; }
+    public void setBusiness(String business) { this.business = business; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getErrorReason() { return errorReason; }
