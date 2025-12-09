@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Order Target Indicators</title>
     <style>
@@ -31,7 +31,13 @@
         td input[type="text"],
         td select {
             width: 100%;
-            box-sizing: border-box;}
+            box-sizing: border-box;
+        }
+
+        /* Стили для множественного выбора */
+        select[multiple] {
+            min-height: 100px;
+        }
     </style>
 </head>
 <body>
@@ -71,7 +77,7 @@
 <a href="/api/order/export/main">Сохранить XLS</a>
 
 <h2>Ошибки XLS файла</h2>
-
+<button onclick="clearListErr()">Очистить список экрана</button>
 <form id="transferForm" action="/api/order/transfer" method="post">
     <table id="errorTable">
         <thead>
@@ -162,10 +168,10 @@
         indicators.forEach(indicator => {
             const row = document.createElement('tr');
 
-            // Добавляем пустую строку в селект дивизиона
-            let divisionValue = indicator.division || '';
-            if (divisionValue === 'EMPTY' || divisionValue === 'empty') {
-                divisionValue = '';
+            // Получаем список дивизионов как массив (разделяем по запятой или точке с запятой)
+            let divisionArray = [];
+            if (indicator.divisions) {
+                divisionArray = indicator.divisions.split(/[,;]+/).map(d => d.trim()).filter(d => d);
             }
 
             row.innerHTML = `
@@ -180,8 +186,8 @@
             <td><input type="text" name="goal" value="${indicator.goal || ''}"></td>
             <td><input type="text" name="deadline" value="${indicator.deadline || ''}"></td>
             <td>
-                <select name="division">
-                    ${renderOptionsWithEmpty(divisions, divisionValue)}
+                <select name="divisions" multiple>
+                    ${renderMultipleOptions(divisions, divisionArray)}
                 </select>
             </td>
             <td><input type="text" name="owner" value="${indicator.owner || ''}"></td>
@@ -205,9 +211,9 @@
             const row = document.createElement('tr');
             row.className = 'error-row';
 
-            let divisionValue = error.division || '';
-            if (divisionValue === 'EMPTY' || divisionValue === 'empty') {
-                divisionValue = '';
+            let divisionArray = [];
+            if (error.divisions) {
+                divisionArray = error.divisions.split(/[,;]+/).map(d => d.trim()).filter(d => d);
             }
 
             row.innerHTML = `
@@ -223,8 +229,8 @@
             <td><input type="text" name="goal" value="${error.goal || ''}"></td>
             <td><input type="text" name="deadline" value="${error.deadline || ''}"></td>
             <td>
-                <select name="division">
-                    ${renderOptionsWithEmpty(divisions, divisionValue)}
+                <select name="divisions" multiple>
+                    ${renderMultipleOptions(divisions, divisionArray)}
                 </select>
             </td>
             <td><input type="text" name="owner" value="${error.owner || ''}"></td>
@@ -248,30 +254,27 @@
         }).join('');
     }
 
-    function renderOptionsWithEmpty(options, selectedValue) {
-        let result = '';
-
-        // Добавляем пустую опцию
-        const emptySelected = (selectedValue === '' || selectedValue === null) ? 'selected' : '';
-        result += `<option value="" ${emptySelected}></option>`;
-
-        // Добавляем остальные опции
-        options.forEach(option => {
-            const selected = option === selectedValue ? 'selected' : '';
-            result += `<option value="${option}" ${selected}>${option}</option>`;
-        });
-
-        return result;
+    function renderMultipleOptions(options, selectedValues) {
+        return options.map(option => {
+            const selected = selectedValues.includes(option) ? 'selected' : '';
+            return `<option value="${option}" ${selected}>${option}</option>`;
+        }).join('');
     }
 
     function updateIndicator(id, row) {
+        // Получаем все выбранные значения из множественного select
+        const divisionSelect = row.querySelector('select[name="divisions"]');
+        const selectedDivisions = Array.from(divisionSelect.selectedOptions)
+            .map(option => option.value)
+            .join(', ');
+
         const data = {
             number: row.querySelector('input[name="number"]').value,
             structure: row.querySelector('select[name="structure"]').value || '',
             level: row.querySelector('input[name="level"]').value || '',
             goal: row.querySelector('input[name="goal"]').value,
             deadline: row.querySelector('input[name="deadline"]').value || '',
-            division: row.querySelector('select[name="division"]').value || '',
+            divisions: selectedDivisions, // Отправляем строку с разделителями
             owner: row.querySelector('input[name="owner"]').value || '',
             coordinator: row.querySelector('input[name="coordinator"]').value || '',
             responsibles: row.querySelector('input[name="responsibles"]').value || '',
@@ -302,13 +305,19 @@
     }
 
     function updateError(id, row) {
+        // Получаем все выбранные значения из множественного select
+        const divisionSelect = row.querySelector('select[name="divisions"]');
+        const selectedDivisions = Array.from(divisionSelect.selectedOptions)
+            .map(option => option.value)
+            .join(', ');
+
         const data = {
             number: row.querySelector('input[name="number"]').value,
             structure: row.querySelector('select[name="structure"]').value || '',
             level: row.querySelector('input[name="level"]').value || '',
             goal: row.querySelector('input[name="goal"]').value,
             deadline: row.querySelector('input[name="deadline"]').value || '',
-            division: row.querySelector('select[name="division"]').value || '',
+            divisions: selectedDivisions, // Отправляем строку с разделителями
             owner: row.querySelector('input[name="owner"]').value || '',
             coordinator: row.querySelector('input[name="coordinator"]').value || '',
             responsibles: row.querySelector('input[name="responsibles"]').value || '',
@@ -361,7 +370,6 @@
     }
 
     function transferErrors(form) {
-        // const formData = new FormData(form);
         const checkboxes = form.querySelectorAll('input[type="checkbox"]:checked');
 
         if (checkboxes.length === 0) {
@@ -369,9 +377,6 @@
             return;
         }
         const errorIds = Array.from(checkboxes).map(checkbox => checkbox.value);
-        // checkboxes.forEach(checkbox => {
-        //     formData.append('errorIds', checkbox.value);
-        // });
 
         fetch(form.action, {
             method: 'POST',
@@ -379,7 +384,6 @@
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(errorIds)
-            // body: formData
         })
             .then(response => response.json())
             .then(data => {
@@ -414,7 +418,24 @@
                 showMessage('Ошибка при очистке списка', 'transferMessage');
             });
     }
-
+    function clearListErr() {
+        fetch('/api/order/clearErr', {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Список очищен', 'message');
+                    loadInitialData(); // Перезагружаем данные
+                } else {
+                    showMessage('Ошибка при очистке списка: ' + data.message, 'transferMessage');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Ошибка при очистке списка', 'transferMessage');
+            });
+    }
     function showMessage(text, elementId) {
         const element = document.getElementById(elementId);
         element.textContent = text;

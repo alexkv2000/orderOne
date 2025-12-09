@@ -16,9 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -48,47 +46,38 @@ public class IndicatorService {
                 TargetIndicator indicator = new TargetIndicator();
 
                 String numberValue = getCellValue(row.getCell(0));
-                // Проверяем, заканчивается ли на точку
                 if (numberValue == null || numberValue.trim().isEmpty()) {
                     err_message.append("Пустой номер в строке ").append(row.getRowNum() + 1).append("; ");
                     err = true;
-                } else if (numberValue != null && !numberValue.trim().isEmpty() && !numberValue.endsWith(".")) {
-                    numberValue = numberValue + "."; // Добавляем точку
+                } else if (!numberValue.trim().isEmpty() && !numberValue.endsWith(".")) {
+                    numberValue = numberValue + ".";
                 }
 
                 if (numberValue != null && !numberValue.trim().isEmpty()) {
-// Разделяем по точкам
                     String[] numberParts = numberValue.split("\\.");
-
                     for (String part : numberParts) {
                         String trimmedPart = part.trim();
-                        // Проверяем, что каждая часть является числом (содержит только цифры)
                         if (!trimmedPart.isEmpty() && !trimmedPart.matches("\\d+")) {
                             err = true;
                             err_message.append("!ожидается_число");
-                            break; // Прерываем цикл при первой ошибке
+                            break;
                         }
                     }
                 }
                 indicator.setNumber(numberValue);
 
-                // ПРОВЕРКА: если есть число до первой точки, то ячейка 1 должна быть "Цель"
                 if (numberValue != null && !numberValue.trim().isEmpty()) {
-                    // Извлекаем число до первой точки
                     String[] parts = numberValue.split("\\.");
                     String numberBeforeDot = parts[0].trim();
-
-                    // Проверяем, что это число (содержит только цифры)
                     if (numberBeforeDot.matches("\\d+") && (parts.length == 1)) {
                         String cell1Value = getCellValue(row.getCell(1));
-
-                        // Проверяем, что ячейка 1 содержит "Цель"
                         if (cell1Value == null || !"Раздел".equals(cell1Value.trim())) {
                             err = true;
                             err_message.append("|!ожидается_Раздел_а_не_").append(cell1Value);
                         }
                     }
                 }
+
                 String stringStructure = getCellValue(row.getCell(1));
                 if (stringStructure == null || stringStructure.trim().isEmpty()) {
                     err_message.append("Структура пустая (строка - ").append(row.getRowNum() + 1).append("); ");
@@ -104,7 +93,7 @@ public class IndicatorService {
                     try {
                         indicator.setStructure(TargetIndicator.Structure.valueOf(stringStructure));
                     } catch (Exception e) {
-                        System.out.println("!!!! Ошибка_структары - " + e.toString());
+                        log.error("Ошибка_структуры: {}", e.toString());
                         err = true;
                         indicator.setStructure(TargetIndicator.Structure.error);
                         err_message.append("Ошибка_структары");
@@ -114,26 +103,24 @@ public class IndicatorService {
                     indicator.setStructure(TargetIndicator.Structure.error);
                     err_message.append("|!структ");
                 }
-                //Уровень
+
+                // Уровень
                 try {
                     String dateValue = getFormattedDateCellValue(row.getCell(2));
                     indicator.setLevel(dateValue);
                 } catch (IllegalArgumentException e) {
                     err = true;
                     err_message.append("|!уровень");
-                    indicator.setGoal("Нет уровня");
+                    indicator.setLevel("Нет уровня");
                 }
-                //Цель
+
+                // Цель
                 try {
                     String dateValue = getFormattedDateCellValue(row.getCell(3));
-                    if (row.getCell(3) != null) {
-                        if (dateValue.length() > 255) {
-                            err = true;
-                            dateValue = dateValue.substring(0, 254);
-                            err_message.append("|!длинна Цели");
-                        }
-                    } else {
-                        indicator.setDeadline("Нет цели");
+                    if (dateValue != null && dateValue.length() > 255) {
+                        err = true;
+                        dateValue = dateValue.substring(0, 254);
+                        err_message.append("|!длинна Цели");
                     }
                     indicator.setGoal(dateValue);
                 } catch (IllegalArgumentException e) {
@@ -141,9 +128,10 @@ public class IndicatorService {
                     err_message.append("|!цель");
                     indicator.setGoal("Нет цели");
                 }
-                //Сроки
+
+                // Сроки
                 String dLine = getCellValue(row.getCell(4));
-                if (stringStructure.equals("Раздел")) { //Для раздела владельца может не быть
+                if ("Раздел".equals(stringStructure)) {
                     indicator.setOwner(dLine);
                 } else {
                     if (dLine == null || dLine.trim().isEmpty()) {
@@ -151,38 +139,39 @@ public class IndicatorService {
                         err_message.append("|!дата");
                         indicator.setDeadline("Нет даты");
                     } else {
-                        try {
-                            indicator.setDeadline(dLine);
-                        } catch (IllegalArgumentException e) {
-                            err = true;
-                            err_message.append("|!дата");
-                            indicator.setDeadline("Нет даты");
-                        }
+                        indicator.setDeadline(dLine);
                     }
                 }
-                //Дивизион
+
+                // Дивизионы (теперь несколько)
                 try {
                     String div = getCellValue(row.getCell(5));
-                    Optional<TargetIndicator.Division> division = TargetIndicator.Division.fromDisplayName(div); //убрать
-
                     if (div == null && !Objects.equals(stringStructure, "Раздел")) {
                         err_message.append("Пустое значение дивизиона ").append(row.getRowNum() + 1).append("; ");
-                        indicator.setDivision(TargetIndicator.Division.error);
+                        indicator.setDivisions("");
                         err = true;
                     } else if (div == null && Objects.equals(stringStructure, "Раздел")) {
-                        indicator.setDivision(TargetIndicator.Division.EMPTY);
+                        indicator.setDivisions("");
                     } else {
-                        indicator.setDivision(TargetIndicator.Division.valueOf(getCellValue(row.getCell(5))));
+                        // Проверяем, есть ли в строке несколько дивизионов
+                        List<TargetIndicator.Division> divisions = TargetIndicator.Division.fromStringList(div);
+                        if (divisions.isEmpty()) {
+                            err = true;
+                            err_message.append("|!див");
+                            indicator.setDivisions("");
+                        } else {
+                            indicator.setDivisions(TargetIndicator.Division.toString(divisions));
+                        }
                     }
-                } catch (IllegalArgumentException e) {
+                } catch (Exception e) {
                     err = true;
-                    indicator.setDivision(TargetIndicator.Division.error);
+                    indicator.setDivisions("");
                     err_message.append("|!див");
                 }
-                //Владелец
+
+                // Владелец
                 String owner = getCellValue(row.getCell(6));
-                assert stringStructure != null;
-                if (stringStructure.equals("Раздел")) { //Для раздела владельца может не быть
+                if ("Раздел".equals(stringStructure)) {
                     indicator.setOwner(owner);
                 } else {
                     if (owner == null || owner.trim().isEmpty()) {
@@ -190,19 +179,13 @@ public class IndicatorService {
                         err_message.append("|!влад");
                         indicator.setOwner("Нет владельца");
                     } else {
-                        try {
-                            indicator.setOwner(getCellValue(row.getCell(6)));
-                        } catch (IllegalArgumentException e) {
-                            err = true;
-                            err_message.append("|!влад");
-                            indicator.setOwner("Нет владельца");
-                        }
+                        indicator.setOwner(owner);
                     }
                 }
-                //Координатор
+
+                // Координатор
                 String coord = getCellValue(row.getCell(7));
-                // Для координатора пустое значение допустимо, проверяем только если не пусто
-                if (stringStructure.equals("Раздел")) { //Для раздела владельца может не быть
+                if ("Раздел".equals(stringStructure)) {
                     indicator.setCoordinator(coord);
                 } else {
                     if (coord == null || coord.trim().isEmpty()) {
@@ -217,10 +200,10 @@ public class IndicatorService {
                         indicator.setCoordinator(coord);
                     }
                 }
-                //Ответственные
+
+                // Ответственные
                 String resp = getCellValue(row.getCell(8));
-                // Ответственные - обязательное поле
-                if (stringStructure.equals("Раздел")) { //Для раздела владельца может не быть
+                if ("Раздел".equals(stringStructure)) {
                     indicator.setResponsibles(resp);
                 } else {
                     if (resp == null || resp.trim().isEmpty()) {
@@ -233,10 +216,10 @@ public class IndicatorService {
                         indicator.setResponsibles(resp);
                     }
                 }
-                //Дополнительные ответственные
+
+                // Дополнительные ответственные
                 String addResp = getCellValue(row.getCell(9));
-                // Дополнительные ответственные - обязательное поле
-                if (stringStructure.equals("Раздел")) { //Для раздела владельца может не быть
+                if ("Раздел".equals(stringStructure)) {
                     indicator.setBusiness(addResp);
                 } else {
                     if (!validateMultipleEmails(addResp)) {
@@ -246,14 +229,12 @@ public class IndicatorService {
                         indicator.setAdditionalResponsibles(addResp);
                     }
                 }
-                //Бизнес
-                try {
-                    indicator.setBusiness(addResp);
-                } catch (IllegalArgumentException e) {
-                    err = true;
-                    err_message.append("|!бизнес");
-                }
 
+                // Бизнес
+                String business = getCellValue(row.getCell(10));
+                if (business != null) {
+                    indicator.setBusiness(business);
+                }
 
                 if (err) {
                     saveError(indicator, err_message.toString());
@@ -261,16 +242,12 @@ public class IndicatorService {
                     targetRepo.save(indicator);
                 }
             }
-            workbook.close();
         }
     }
 
     private boolean validateMultipleEmails(String emails) {
         if (emails == null || emails.isEmpty()) return false;
-
-        // Разделяем строку по различным разделителям
         String[] emailArray = emails.split("[,\\s;]+");
-
         for (String email : emailArray) {
             String trimmedEmail = email.trim();
             if (!trimmedEmail.isEmpty() && !isValidEmail(trimmedEmail)) {
@@ -280,7 +257,6 @@ public class IndicatorService {
         return true;
     }
 
-    //Проверка одного email
     private boolean isValidEmail(String email) {
         return EMAIL_PATTERN.matcher(email).matches();
     }
@@ -292,7 +268,7 @@ public class IndicatorService {
         error.setLevel(indicator.getLevel());
         error.setGoal(indicator.getGoal());
         error.setDeadline(indicator.getDeadline());
-        error.setDivision(indicator.getDivision());
+        error.setDivisions(indicator.getDivisions());
         error.setCoordinator(indicator.getCoordinator());
         error.setOwner(indicator.getOwner());
         error.setResponsibles(indicator.getResponsibles());
@@ -311,11 +287,9 @@ public class IndicatorService {
                 return cell.getStringCellValue();
             case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
-                    // Правильное форматирование даты в dd-MM-yyyy
                     SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
                     return dateFormat.format(cell.getDateCellValue());
                 } else {
-                    // Для числовых значений убираем десятичную часть если она .0
                     double numericValue = cell.getNumericCellValue();
                     if (numericValue == Math.floor(numericValue)) {
                         return String.valueOf((int) numericValue);
@@ -326,7 +300,6 @@ public class IndicatorService {
             case BOOLEAN:
                 return String.valueOf(cell.getBooleanCellValue());
             case FORMULA:
-                // Для формул тоже нужно обработать даты
                 try {
                     if (DateUtil.isCellDateFormatted(cell)) {
                         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
@@ -350,7 +323,7 @@ public class IndicatorService {
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
             return dateFormat.format(cell.getDateCellValue());
         }
-        return getCellValue(cell); // Для не-дат используем обычный метод
+        return getCellValue(cell);
     }
 
     private boolean validateEmails(String emails) {
@@ -363,7 +336,9 @@ public class IndicatorService {
     }
 
     public List<TargetIndicator> getAllIndicators() {
-        return targetRepo.findAll().stream().sorted(TargetIndicator.VERSION_COMPARATOR).collect(Collectors.toList());
+        return targetRepo.findAll().stream()
+                .sorted(TargetIndicator.VERSION_COMPARATOR)
+                .collect(Collectors.toList());
     }
 
     public List<ErrorIndicator> getAllErrors() {
@@ -372,6 +347,9 @@ public class IndicatorService {
 
     public void deleteAllIndicators() {
         targetRepo.deleteAll();
+    }
+    public void deleteAllErrors() {
+        errorRepo.deleteAll();
     }
 
     @Transactional
@@ -387,12 +365,15 @@ public class IndicatorService {
             TargetIndicator indicator = new TargetIndicator();
             indicator.setNumber(error.getNumber());
             indicator.setStructure(error.getStructure());
+            indicator.setGoal(error.getLevel());
             indicator.setGoal(error.getGoal());
             indicator.setDeadline(error.getDeadline());
-            indicator.setDivision(error.getDivision());
+            indicator.setDivisions(error.getDivisions());
+            indicator.setCoordinator(error.getOwner());
             indicator.setCoordinator(error.getCoordinator());
             indicator.setResponsibles(error.getResponsibles());
             indicator.setAdditionalResponsibles(error.getAdditionalResponsibles());
+            indicator.setBusiness(error.getBusiness());
 
             targetRepo.save(indicator);
             errorRepo.delete(error);
@@ -405,7 +386,6 @@ public class IndicatorService {
         if (optionalIndicator.isPresent()) {
             TargetIndicator indicator = optionalIndicator.get();
 
-            // Обновляем только необходимые поля
             if (indicatorData.getNumber() != null) {
                 indicator.setNumber(indicatorData.getNumber());
             }
@@ -421,8 +401,8 @@ public class IndicatorService {
             if (indicatorData.getDeadline() != null) {
                 indicator.setDeadline(indicatorData.getDeadline());
             }
-            if (indicatorData.getDivision() != null) {
-                indicator.setDivision(indicatorData.getDivision());
+            if (indicatorData.getDivisions() != null) {
+                indicator.setDivisions(indicatorData.getDivisions());
             }
             if (indicatorData.getOwner() != null) {
                 indicator.setOwner(indicatorData.getOwner());
@@ -452,7 +432,6 @@ public class IndicatorService {
         if (optionalError.isPresent()) {
             ErrorIndicator error = optionalError.get();
 
-            // Обновляем только необходимые поля
             if (errorData.getNumber() != null) {
                 error.setNumber(errorData.getNumber());
             }
@@ -468,8 +447,8 @@ public class IndicatorService {
             if (errorData.getDeadline() != null) {
                 error.setDeadline(errorData.getDeadline());
             }
-            if (errorData.getDivision() != null) {
-                error.setDivision(errorData.getDivision());
+            if (errorData.getDivisions() != null) {
+                error.setDivisions(errorData.getDivisions());
             }
             if (errorData.getOwner() != null) {
                 error.setOwner(errorData.getOwner());
@@ -506,13 +485,13 @@ public class IndicatorService {
         header.createCell(2).setCellValue("Level");
         header.createCell(3).setCellValue("Goal");
         header.createCell(4).setCellValue("Deadline");
-        header.createCell(5).setCellValue("Division");
+        header.createCell(5).setCellValue("Divisions");
         header.createCell(6).setCellValue("Owner");
         header.createCell(7).setCellValue("Coordinator");
         header.createCell(8).setCellValue("Responsibles");
         header.createCell(9).setCellValue("Additional Responsibles");
         header.createCell(10).setCellValue("Business");
-        if (type.equals("errors")) header.createCell(8).setCellValue("Error Reason");
+        if (type.equals("errors")) header.createCell(11).setCellValue("Error Reason");
 
         int rowNum = 1;
         for (Object obj : indicators) {
@@ -524,7 +503,7 @@ public class IndicatorService {
                 row.createCell(2).setCellValue(ind.getLevel());
                 row.createCell(3).setCellValue(ind.getGoal());
                 row.createCell(4).setCellValue(ind.getDeadline());
-                row.createCell(5).setCellValue(ind.getDivision().toString());
+                row.createCell(5).setCellValue(ind.getDivisions()); // Теперь выводим строку с дивизионами
                 row.createCell(6).setCellValue(ind.getOwner());
                 row.createCell(7).setCellValue(ind.getCoordinator());
                 row.createCell(8).setCellValue(ind.getResponsibles());
@@ -537,7 +516,7 @@ public class IndicatorService {
                 row.createCell(2).setCellValue(err.getLevel());
                 row.createCell(3).setCellValue(err.getGoal());
                 row.createCell(4).setCellValue(err.getDeadline());
-                row.createCell(5).setCellValue(err.getDivision().toString());
+                row.createCell(5).setCellValue(err.getDivisions()); // Теперь выводим строку с дивизионами
                 row.createCell(6).setCellValue(err.getOwner());
                 row.createCell(7).setCellValue(err.getCoordinator());
                 row.createCell(8).setCellValue(err.getResponsibles());
@@ -552,4 +531,13 @@ public class IndicatorService {
         return out.toByteArray();
     }
 
+    public TargetIndicator getIndicatorById(Long id) {
+        return targetRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Indicator not found with id: " + id));
+    }
+
+    // Пример использования save()
+    public TargetIndicator saveIndicator(TargetIndicator indicator) {
+        return targetRepo.save(indicator);
+    }
 }

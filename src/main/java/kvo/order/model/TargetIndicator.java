@@ -2,11 +2,8 @@ package kvo.order.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-
-import java.util.Comparator;
-import java.util.Optional;
-
-import static java.util.Optional.empty;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 public class TargetIndicator {
@@ -19,8 +16,10 @@ public class TargetIndicator {
     private String level;
     private String goal;
     private String deadline;
-    @Enumerated(EnumType.STRING)
-    private Division division;
+
+    // Изменяем на String для хранения нескольких значений
+    private String divisions; // Храним как "Группа,ДКА,Энергобизнес"
+
     private String owner;
     private String coordinator;
     private String responsibles;
@@ -86,16 +85,46 @@ public class TargetIndicator {
 
         public static Optional<Division> fromDisplayName(String displayName) {
             if (displayName == null || displayName.trim().isEmpty()) {
-                return empty();
+                return Optional.empty();
             }
 
             for (Division division : values()) {
                 if (division.displayName != null &&
-                        division.displayName.equals(displayName)) {
+                        division.displayName.equals(displayName.trim())) {
                     return Optional.of(division);
                 }
             }
             return Optional.of(error);
+        }
+
+        // Новый метод для обработки нескольких дивизионов
+        public static List<Division> fromStringList(String divisionsString) {
+            if (divisionsString == null || divisionsString.trim().isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<Division> result = new ArrayList<>();
+            String[] parts = divisionsString.split("[,\\s;]+");
+
+            for (String part : parts) {
+                String trimmed = part.trim();
+                if (!trimmed.isEmpty()) {
+                    fromDisplayName(trimmed).ifPresent(result::add);
+                }
+            }
+
+            return result;
+        }
+
+        // Метод для преобразования списка в строку
+        public static String toString(List<Division> divisions) {
+            if (divisions == null || divisions.isEmpty()) {
+                return "";
+            }
+
+            return divisions.stream()
+                    .map(Division::getDisplayName)
+                    .collect(Collectors.joining(", "));
         }
     }
 
@@ -114,8 +143,43 @@ public class TargetIndicator {
     public void setGoal(String goal) { this.goal = goal; }
     public String getDeadline() { return deadline; }
     public void setDeadline(String deadline) { this.deadline = deadline; }
-    public Division getDivision() { return division; }
-    public void setDivision(Division division) { this.division = division; }
+
+    // Геттеры и сеттеры для divisions
+    public String getDivisions() {
+        return divisions;
+    }
+
+    public void setDivisions(String divisions) {
+        this.divisions = divisions;
+    }
+
+    // Вспомогательный метод для получения списка дивизионов
+    public List<Division> getDivisionList() {
+        return Division.fromStringList(this.divisions);
+    }
+
+    // Вспомогательный метод для установки списка дивизионов
+    public void setDivisionList(List<Division> divisions) {
+        this.divisions = Division.toString(divisions);
+    }
+
+    // Старый геттер для обратной совместимости
+    @Transient
+    public Division getDivision() {
+        List<Division> list = getDivisionList();
+        return list.isEmpty() ? Division.EMPTY : list.get(0);
+    }
+
+    // Старый сеттер для обратной совместимости
+    @Transient
+    public void setDivision(Division division) {
+        if (division == null || division == Division.EMPTY) {
+            this.divisions = "";
+        } else {
+            this.divisions = division.getDisplayName();
+        }
+    }
+
     public String getOwner() { return owner; }
     public void setOwner(String owner) { this.owner = owner; }
     public String getCoordinator() { return coordinator; }
@@ -128,6 +192,7 @@ public class TargetIndicator {
     public void setBusiness(String business) { this.business = business; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
     // Comparator for version sorting
     public static Comparator<TargetIndicator> VERSION_COMPARATOR = Comparator.comparing(TargetIndicator::getNumber, (a, b) -> {
         String[] aParts = a.split("\\.");
@@ -139,7 +204,6 @@ public class TargetIndicator {
             try {
                 aPart = i < aParts.length ? Integer.parseInt(aParts[i]) : 0;
             } catch (NumberFormatException e) {
-                // Если не число, считаем как 0 (или можно сравнивать как строки ниже)
                 aPart = 0;
             }
             try {

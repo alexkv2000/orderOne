@@ -109,12 +109,56 @@ public class IndicatorController {
     // JSON API для обновления индикатора
     @PostMapping("/update/{id}")
     @ResponseBody
-    public Map<String, Object> updateIndicator(@PathVariable Long id, @RequestBody TargetIndicator indicator) {
+    public Map<String, Object> updateIndicator(@PathVariable Long id, @RequestBody Map<String, String> data) {
         Map<String, Object> response = new HashMap<>();
         try {
-            service.updateIndicator(id, indicator);
-            response.put("success", true);
-            response.put("message", "Indicator updated successfully");
+            Optional<TargetIndicator> optionalIndicator = Optional.ofNullable(service.getIndicatorById(id));
+
+            if (optionalIndicator.isPresent()) {
+                TargetIndicator indicator = optionalIndicator.get();
+
+                // Обновляем поля из data
+                if (data.containsKey("number")) {
+                    indicator.setNumber(data.get("number"));
+                }
+                if (data.containsKey("structure")) {
+                    indicator.setStructure(TargetIndicator.Structure.fromDisplayName(data.get("structure")));
+                }
+                if (data.containsKey("level")) {
+                    indicator.setLevel(data.get("level"));
+                }
+                if (data.containsKey("goal")) {
+                    indicator.setGoal(data.get("goal"));
+                }
+                if (data.containsKey("deadline")) {
+                    indicator.setDeadline(data.get("deadline"));
+                }
+                if (data.containsKey("divisions")) {
+                    indicator.setDivisions(data.get("divisions"));
+                }
+                if (data.containsKey("owner")) {
+                    indicator.setOwner(data.get("owner"));
+                }
+                if (data.containsKey("coordinator")) {
+                    indicator.setCoordinator(data.get("coordinator"));
+                }
+                if (data.containsKey("responsibles")) {
+                    indicator.setResponsibles(data.get("responsibles"));
+                }
+                if (data.containsKey("additionalResponsibles")) {
+                    indicator.setAdditionalResponsibles(data.get("additionalResponsibles"));
+                }
+                if (data.containsKey("business")) {
+                    indicator.setBusiness(data.get("business"));
+                }
+
+                service.saveIndicator(indicator);
+                response.put("success", true);
+                response.put("message", "Indicator updated successfully");
+            } else {
+                response.put("success", false);
+                response.put("message", "Indicator not found");
+            }
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", e.getMessage());
@@ -162,6 +206,20 @@ public class IndicatorController {
         Map<String, Object> response = new HashMap<>();
         try {
             service.deleteAllIndicators();
+            response.put("success", true);
+            response.put("message", "Экран очищен. Indicators удалены.");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Ошибка при очистке: " + e.getMessage());
+        }
+        return response;
+    }
+    @PostMapping("/clearErr")
+    @ResponseBody
+    public Map<String, Object> clearIndicatorsErr() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            service.deleteAllErrors();
             response.put("success", true);
             response.put("message", "Экран очищен. Indicators удалены.");
         } catch (Exception e) {

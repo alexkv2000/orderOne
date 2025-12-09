@@ -1,6 +1,8 @@
 package kvo.order.model;
 
 import jakarta.persistence.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 public class ErrorIndicator {
@@ -13,18 +15,17 @@ public class ErrorIndicator {
     private String level;
     private String goal;
     private String deadline;
-    @Enumerated(EnumType.STRING)
-    private TargetIndicator.Division division;
+
+    // Изменяем на String для хранения нескольких значений
+    private String divisions;
+
     private String owner;
     private String coordinator;
     private String responsibles;
     private String additionalResponsibles;
     private String business;
-    private String status = "error";
     private String errorReason;
-    private Long originalId;
 
-    // Getters and Setters (аналогично TargetIndicator)
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNumber() { return number; }
@@ -37,8 +38,43 @@ public class ErrorIndicator {
     public void setGoal(String goal) { this.goal = goal; }
     public String getDeadline() { return deadline; }
     public void setDeadline(String deadline) { this.deadline = deadline; }
-    public TargetIndicator.Division getDivision() { return division; }
-    public void setDivision(TargetIndicator.Division division) { this.division = division; }
+
+    // Геттеры и сеттеры для divisions
+    public String getDivisions() {
+        return divisions;
+    }
+
+    public void setDivisions(String divisions) {
+        this.divisions = divisions;
+    }
+
+    // Вспомогательный метод для получения списка дивизионов
+    public List<TargetIndicator.Division> getDivisionList() {
+        return TargetIndicator.Division.fromStringList(this.divisions);
+    }
+
+    // Вспомогательный метод для установки списка дивизионов
+    public void setDivisionList(List<TargetIndicator.Division> divisions) {
+        this.divisions = TargetIndicator.Division.toString(divisions);
+    }
+
+    // Старый геттер для обратной совместимости
+    @Transient
+    public TargetIndicator.Division getDivision() {
+        List<TargetIndicator.Division> list = getDivisionList();
+        return list.isEmpty() ? TargetIndicator.Division.EMPTY : list.get(0);
+    }
+
+    // Старый сеттер для обратной совместимости
+    @Transient
+    public void setDivision(TargetIndicator.Division division) {
+        if (division == null || division == TargetIndicator.Division.EMPTY) {
+            this.divisions = "";
+        } else {
+            this.divisions = division.getDisplayName();
+        }
+    }
+
     public String getOwner() { return owner; }
     public void setOwner(String owner) { this.owner = owner; }
     public String getCoordinator() { return coordinator; }
@@ -49,10 +85,6 @@ public class ErrorIndicator {
     public void setAdditionalResponsibles(String additionalResponsibles) { this.additionalResponsibles = additionalResponsibles; }
     public String getBusiness() { return business; }
     public void setBusiness(String business) { this.business = business; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
     public String getErrorReason() { return errorReason; }
     public void setErrorReason(String errorReason) { this.errorReason = errorReason; }
-    public Long getOriginalId() { return originalId; }
-    public void setOriginalId(Long originalId) { this.originalId = originalId; }
 }
