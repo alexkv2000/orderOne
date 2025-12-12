@@ -122,7 +122,7 @@ public class IndicatorController {
                     indicator.setNumber(data.get("number"));
                 }
                 if (data.containsKey("structure")) {
-                    indicator.setStructure(TargetIndicator.Structure.fromDisplayName(data.get("structure")));
+                    indicator.setStructure(TargetIndicator.Structure.valueOf(data.get("structure")));
                 }
                 if (data.containsKey("level")) {
                     indicator.setLevel(data.get("level"));

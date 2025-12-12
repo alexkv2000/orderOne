@@ -15,7 +15,7 @@ public interface TargetIndicatorRepository extends JpaRepository<TargetIndicator
     List<TargetIndicator> findByStructure(TargetIndicator.Structure structure);
 
     // Найти по дивизиону (используя строковое поле divisions)
-    List<TargetIndicator> findByDivisionsContaining(String division);
+    List<TargetIndicator> findByDivisionContaining(String division);
 
     // Найти по владельцу
     List<TargetIndicator> findByOwner(String owner);
@@ -27,7 +27,7 @@ public interface TargetIndicatorRepository extends JpaRepository<TargetIndicator
     List<TargetIndicator> findByStatus(String status);
 
     // Найти по нескольким критериям
-    List<TargetIndicator> findByStructureAndDivisionsContaining(TargetIndicator.Structure structure, String division);
+    List<TargetIndicator> findByStructureAndDivisionContaining(TargetIndicator.Structure structure, String division);
 
     // Проверить существование по номеру
     boolean existsByNumber(String number);
