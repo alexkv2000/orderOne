@@ -31,20 +31,25 @@ public class IndicatorService {
     private ErrorIndicatorRepository errorRepo;
 
     //    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$");
-    //TODO Для учетки GAZ\*
+    //Для учетки GAZ\*
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^GAZ\\\\[\\w.-]+$", Pattern.CASE_INSENSITIVE);
 
     public void importFromXls(MultipartFile file) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
-
+            boolean err = false;
+            String sheetError = null;
             StringBuilder err_message = new StringBuilder();
+            if (sheet.getSheetName() == null || !sheet.getSheetName().equals("СВОД")) {
+                sheetError = "! Ожидается лист 'СВОД', но найден '" + (sheet.getSheetName() != null ? sheet.getSheetName() : "null") + "'";
+                err = true; // Глобальная ошибка
+            }
             for (Row row : sheet) {
                 int leng_sb = err_message.length();
                 err_message.delete(0, leng_sb);
-                boolean err = false;
+                err = false;
 
-                if (row.getRowNum() == 0) continue; // Skip header
+                if (row.getRowNum() == 0 || row.getRowNum() == 1) continue; // Skip header
                 TargetIndicator indicator = new TargetIndicator();
 
                 String numberValue = getCellValue(row.getCell(0));
@@ -90,13 +95,15 @@ public class IndicatorService {
                 }
                 //Структура
                 String stringStructure = getCellValue(row.getCell(1));
-                if (stringStructure == null || stringStructure.trim().isEmpty()) {
+
+                if (stringStructure.isEmpty() || stringStructure.trim().isEmpty()) {
                     err_message.append("Структура пустая (строка - ").append(row.getRowNum() + 1).append("); ");
                     indicator.setStructure(TargetIndicator.Structure.error);
                     err = true;
                 } else {
+                    stringStructure = stringStructure.toUpperCase();
                     switch (stringStructure) {
-                        case "Мероприятие", "Раздел", "Подраздел", "Цель", "Подцель", "Задача", "Подзадача" -> {
+                        case "МЕРОПРИЯТИЕ", "РАЗДЕЛ", "ПОДРАЗДЕЛ", "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
                             try {
                                 indicator.setStructure(TargetIndicator.Structure.valueOf(stringStructure));
                                 break;
@@ -104,14 +111,14 @@ public class IndicatorService {
                                 log.error("Ошибка_структуры: {}", e.toString());
                                 err = true;
                                 indicator.setStructure(TargetIndicator.Structure.error);
-                                err_message.append("Ошибка_структуры");  // Исправил опечатку: "структары" -> "структуры"
+                                err_message.append("Ошибка_структуры");
                                 break;
                             }
                         }
                         default -> {
                             err = true;
                             indicator.setStructure(TargetIndicator.Structure.error);
-                            err_message.append("|!структ");  // Возможно, имелось в виду "|!структура" или "|!структ" — оставил как есть
+                            err_message.append("|!структ");
                         }
                     }
                 };
@@ -119,6 +126,7 @@ public class IndicatorService {
                 // Уровень
                 try {
                     String dateValue = getFormattedDateCellValue(row.getCell(2));
+                    if (dateValue!=null) {dateValue = dateValue.toUpperCase();}
                     indicator.setLevel(dateValue);
                 } catch (IllegalArgumentException e) {
                     err = true;
@@ -144,18 +152,23 @@ public class IndicatorService {
                 // Сроки
                 String dLine = getCellValue(row.getCell(4));
                 //сроки для ...
-                String structure = Objects.requireNonNull(stringStructure).trim();
-                switch (structure) {
-                    case "Мероприятие", "Цель", "Подцель", "Задача", "Подзадача" -> {
-                        if (dLine == null || dLine.trim().isEmpty()) {
-                            err = true;
-                            err_message.append("|!дата");
-                            break;
-                        } else indicator.setDeadline(dLine);
+                String structure = Objects.requireNonNull(stringStructure);
+                if (!structure.isEmpty()) {  // Проверяем, не пустая ли строка
+                    switch (structure.toUpperCase()) {
+                        case "МЕРОПРИЯТИЕ", "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
+                            if (dLine == null || dLine.trim().isEmpty()) {
+                                err = true;
+                                err_message.append("|!дата");
+                            } else {
+                                indicator.setDeadline(dLine);
+                            }
+                        }
+                        default -> {
+                            indicator.setDeadline(dLine);
+                        }
                     }
-                    default -> {
-                        indicator.setDeadline(dLine);
-                    }
+                } else {
+                    indicator.setDeadline(dLine);  // Для пустой структуры
                 }
 
                 // Дивизионы (несколько)
@@ -164,7 +177,7 @@ public class IndicatorService {
                     // Проверяем, есть ли в строке несколько дивизионов (Дивизионы обязательны для всех)
                     List<TargetIndicator.Division> divisions = TargetIndicator.Division.fromStringList(div);
                     switch (structure) {
-                        case "Мероприятие", "Раздел", "Подраздел", "Цель", "Подцель", "Задача", "Подзадача" -> {
+                        case    "МЕРОПРИЯТИЕ", "РАЗДЕЛ", "ПОДРАЗДЕЛ", "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
                             if (div == null || div.trim().isEmpty()) {
                                 err = true;
                                 err_message.append("Пустое значение дивизиона ").append(row.getRowNum() + 1).append("; ");
@@ -190,14 +203,14 @@ public class IndicatorService {
                     single_owner = owner.split(";");
                 }
                 switch (structure) {
-                    case "Мероприятие", "Цель", "Подцель", "Задача", "Подзадача" -> {
+                    case    "МЕРОПРИЯТИЕ", "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
                         if (owner == null || owner.trim().isEmpty() || single_owner.length > 1) {
                             err = true;
                             err_message.append("|!влад");
                             indicator.setOwner("Нет владельца");
                         } else indicator.setOwner(owner);
                     }
-                    case "Раздел", "Подраздел" -> {
+                    case "РАЗДЕЛ", "ПОДРАЗДЕЛ" -> {
                         if (single_owner.length > 1) {
                             err = true;
                             err_message.append("|!влад-Один");
@@ -214,14 +227,14 @@ public class IndicatorService {
                     single_coord = coord.split(";");
                 }
                 switch (structure) {
-                    case "Цель", "Подцель", "Задача", "Подзадача" -> {
+                    case    "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
                         if (coord == null || coord.trim().isEmpty() || !validateEmails(coord)) {
                             err = true;
                             err_message.append("|!коорд");
                             indicator.setCoordinator("Нет координатора");
                         } else indicator.setCoordinator(coord);
                     }
-                    case "Раздел", "Подраздел" -> {
+                    case    "РАЗДЕЛ", "ПОДРАЗДЕЛ" -> {
                         if (single_coord.length > 1) {
                             err = true;
                             err_message.append("|!коорд-Один");
@@ -254,7 +267,9 @@ public class IndicatorService {
                 if (business != null) {
                     indicator.setBusiness(business);
                 }
-
+                if (sheetError != null) {
+                    err_message.insert(0, sheetError + "\n"); // Добавляем в начало для приоритета
+                }
                 if (err) {
                     saveError(indicator, err_message.toString());
                 } else {
@@ -302,11 +317,11 @@ public class IndicatorService {
 
     private String getCellValue(Cell cell) {
         if (cell == null) {
-            return null;
+            return "";
         }
         switch (cell.getCellType()) {
             case STRING:
-                return cell.getStringCellValue();
+                return cell.getStringCellValue().trim();
             case NUMERIC:
                 if (DateUtil.isCellDateFormatted(cell)) {
                     SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
@@ -327,13 +342,13 @@ public class IndicatorService {
                         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
                         return dateFormat.format(cell.getDateCellValue());
                     } else {
-                        return cell.getStringCellValue();
+                        return cell.getStringCellValue().trim();
                     }
                 } catch (Exception e) {
                     return cell.getCellFormula();
                 }
             default:
-                return null;
+                return "";
         }
     }
 
@@ -351,7 +366,7 @@ public class IndicatorService {
     private boolean validateEmails(String emails) {
         if (emails == null || emails.isEmpty()) return false;
 //        String[] emailArray = emails.split(",");
-        //TODO разделения ';'
+        //разделения ';'
         String[] emailArray = emails.split(";");
         for (String email : emailArray) {
             if (!EMAIL_PATTERN.matcher(email.trim()).matches()) return false;

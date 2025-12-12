@@ -356,10 +356,12 @@
         })
             .then(response => response.json())
             .then(data => {
+                console.log('Ответ сервера:', data);
                 if (data.success) {
                     showMessage('Файл успешно загружен', 'message');
                     loadInitialData(); // Перезагружаем данные
                 } else {
+                    const message = data.message || 'Неизвестная ошибка';
                     showMessage('Ошибка при загрузке файла: ' + data.message, 'transferMessage');
                 }
             })

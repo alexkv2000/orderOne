@@ -28,12 +28,12 @@ public class TargetIndicator {
     private String status = "valid";
 
     public enum Structure {
-        Мероприятие, Раздел, Подраздел, Цель, Подцель, Задача, Подзадача, EMPTY(""), SPACE(" "), error;
+        МЕРОПРИЯТИЕ, РАЗДЕЛ, ПОДРАЗДЕЛ, ЦЕЛЬ, ПОДЦЕЛЬ, ЗАДАЧА, ПОДЗАДАЧА, EMPTY(""), SPACE(" "), error;
 
         private final String displayName;
 
         Structure() {
-            this.displayName = this.name();
+            this.displayName = this.name().toUpperCase();
         }
 
         Structure(String displayName) {

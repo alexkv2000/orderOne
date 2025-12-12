@@ -1,15 +1,70 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Error Indicators</title>
-    <style>
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
+<html xmlns:th="http://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    /* Стили для рамки и выделения */
+    .important-box {
+        border: 2px solid #769bec;
+        padding: 5px;
+        padding-left: 30px; /* Сдвиг маркеров и текста */
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background-color: #f9f9f9;
+        text-align: left;
+        list-style-type: disc; /* Маркеры */
+    }
+    .important-word {
+        font-weight: bold;
+        color: #ec7680;
+        font-size: 1.1em;
+    }
+    button {
+        color: #ec7680;
+        background-color: #f2f2f2;
+        border: 1px solid #769bec;
+        padding: 8px 12px;
+        cursor: pointer; /* Курсор при наведении */
+    }
+</style>
 </head>
 <body>
 <h1>Error Indicators</h1>
+<!-- Кнопка для переключения подсказки -->
+<button onclick="toggleHint()">Важно при заполнения Excel:</button>
+
+<!-- Блок подсказки (изначально видимый) -->
+<ul id="hintBlock" class="important-box">
+    <li>Дивизионы, Координаторы, Ответственные, Доп.ответственные - указывать через точка с запятой '<span class="important-word">;</span>'</li>
+    <li>Лист страницы Excel должен иметь названия '<span class="important-word">СВОД</span>'.</li>
+    <li>Данные из Excel загружаются с <span class="important-word">третьей</span> (3) строки.</li>
+    <li>Структура файла Excel: <span class="important-word">ID : Номер : Структура : Уровень : Цель : Срок : Дивизион : Владелец : Координатор : Ответственные : Дополнительные ответственные : Тип цели</span></li>
+</ul>
+
+<script>
+    function toggleHint() {
+        var hint = document.getElementById("hintBlock");
+        if (hint.style.display === "none") {
+            hint.style.display = "block";  // Показать
+        } else {
+            hint.style.display = "none";   // Скрыть
+        }
+    }
+</script>
 <table>
     <thead>
     <tr>

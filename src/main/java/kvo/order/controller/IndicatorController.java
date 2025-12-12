@@ -75,10 +75,11 @@ public class IndicatorController {
             service.importFromXls(file);
             response.put("success", true);
             response.put("message", "File uploaded successfully!");
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Error during file upload: ", e);
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Неизвестная ошибка при обработке файла";
             response.put("success", false);
-            response.put("message", "Error uploading file: " + e.getMessage());
+            response.put("message", "Error uploading file: " + errorMessage);
         }
         return response;
     }
@@ -227,5 +228,10 @@ public class IndicatorController {
             response.put("message", "Ошибка при очистке: " + e.getMessage());
         }
         return response;
+    }
+    @GetMapping("/help")
+    public String help() {
+        System.out.println("'/' - мониторинг сервисов серверов; \n'/export' - экспорт данных в TXT формате; \n'/status - просмотр данных в JSON формате.\n");
+        return "help";
     }
 }
