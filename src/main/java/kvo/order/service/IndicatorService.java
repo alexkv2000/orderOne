@@ -244,7 +244,7 @@ public class IndicatorService {
                     default -> indicator.setCoordinator(coord);
                 }
 
-                // Ответственные
+                // Соисполнители
                 String resp = getCellValue(row.getCell(8));
                 if (!validateMultipleEmails(resp)) {
                     err = true;
@@ -405,11 +405,11 @@ public class IndicatorService {
             TargetIndicator indicator = new TargetIndicator();
             indicator.setNumber(error.getNumber());
             indicator.setStructure(error.getStructure());
-            indicator.setGoal(error.getLevel());
+            indicator.setLevel(error.getLevel());
             indicator.setGoal(error.getGoal());
             indicator.setDeadline(error.getDeadline());
             indicator.setDivisions(error.getDivisions());
-            indicator.setCoordinator(error.getOwner());
+            indicator.setOwner(error.getOwner());
             indicator.setCoordinator(error.getCoordinator());
             indicator.setResponsibles(error.getResponsibles());
             indicator.setAdditionalResponsibles(error.getAdditionalResponsibles());
