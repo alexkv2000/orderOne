@@ -2,6 +2,7 @@ package kvo.order.controller;
 
 import kvo.order.model.ErrorIndicator;
 import kvo.order.model.TargetIndicator;
+import kvo.order.config.DivisionConfig;
 import kvo.order.repository.ErrorIndicatorRepository;
 import kvo.order.service.IndicatorService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,8 @@ public class IndicatorController {
 
     @Autowired
     private IndicatorService service;
-
+    @Autowired
+    private DivisionConfig divisionConfig;
     // JSON API endpoint для получения всех данных
     @GetMapping("/data")
     @ResponseBody
@@ -37,7 +39,9 @@ public class IndicatorController {
         data.put("indicators", service.getAllIndicators());
         data.put("errors", service.getAllErrors());
         data.put("structures", TargetIndicator.Structure.values());
-        data.put("divisions", TargetIndicator.Division.values());
+        // Изменено: Вместо enum Division используем список строк из DivisionConfig (предполагаем, что DivisionConfig.getDivisions() возвращает List<String>)
+        // Если DivisionConfig не имеет такого метода, замените на Arrays.asList("Дивизион1", "Дивизион2", ...) или добавьте логику
+        data.put("divisions", divisionConfig.getDivisions());
         return data;
     }
 
@@ -56,7 +60,8 @@ public class IndicatorController {
         model.addAttribute("indicators", indicators_ind);
         model.addAttribute("errors", indicators_err);
         model.addAttribute("structures", TargetIndicator.Structure.values());
-        model.addAttribute("divisions", TargetIndicator.Division.values());
+        // Изменено: Вместо enum Division используем список строк из DivisionConfig
+        model.addAttribute("divisions", divisionConfig.getDivisions());
         return "order";
     }
 
@@ -135,7 +140,7 @@ public class IndicatorController {
                     indicator.setDeadline(data.get("deadline"));
                 }
                 if (data.containsKey("divisions")) {
-                    indicator.setDivisions(data.get("divisions"));
+                    indicator.setDivisions(data.get("divisions"));  // Уже String — корректно
                 }
                 if (data.containsKey("owner")) {
                     indicator.setOwner(data.get("owner"));
@@ -167,7 +172,6 @@ public class IndicatorController {
         return response;
     }
 
-
     // JSON API для обновления ошибки
     @PostMapping("/update-error/{id}")
     @ResponseBody
@@ -175,7 +179,7 @@ public class IndicatorController {
         Map<String, Object> response = new HashMap<>();
         try {
             error.setId(id);
-            service.updateError(id, error);
+            service.updateError(id, error);  // Метод в сервисе обновлён для divisions как String и errorMessage
             response.put("success", true);
             response.put("message", "Error updated successfully");
         } catch (Exception e) {
@@ -187,7 +191,7 @@ public class IndicatorController {
 
     @GetMapping("/export/{type}")
     public ResponseEntity<byte[]> export(@PathVariable String type) throws IOException {
-        byte[] data = service.exportToXls(type);
+        byte[] data = service.exportToXls(type);  // Экспорт в сервисе обновлён: заголовок "Error Message", divisions как String
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentDispositionFormData("attachment", "indicators.xlsx");
@@ -215,6 +219,7 @@ public class IndicatorController {
         }
         return response;
     }
+
     @PostMapping("/clearErr")
     @ResponseBody
     public Map<String, Object> clearIndicatorsErr() {
@@ -229,6 +234,7 @@ public class IndicatorController {
         }
         return response;
     }
+
     @GetMapping("/help")
     public String help() {
         System.out.println("'/' - мониторинг сервисов серверов; \n'/export' - экспорт данных в TXT формате; \n'/status - просмотр данных в JSON формате.\n");

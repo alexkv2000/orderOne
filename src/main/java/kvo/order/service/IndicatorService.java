@@ -1,6 +1,7 @@
 package kvo.order.service;
 
 import jakarta.transaction.Transactional;
+import kvo.order.config.DivisionConfig;
 import kvo.order.model.ErrorIndicator;
 import kvo.order.model.TargetIndicator;
 import kvo.order.repository.ErrorIndicatorRepository;
@@ -30,9 +31,9 @@ public class IndicatorService {
     @Autowired
     private ErrorIndicatorRepository errorRepo;
 
-    //    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$");
-    //Для учетки GAZ\*
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^GAZ\\\\[\\w.-]+$", Pattern.CASE_INSENSITIVE);
+    @Autowired
+    private DivisionConfig divisionConfig;
 
     public void importFromXls(MultipartFile file) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(file.getInputStream())) {
@@ -121,7 +122,7 @@ public class IndicatorService {
                             err_message.append("|!структ");
                         }
                     }
-                };
+                }
 
                 // Уровень
                 try {
@@ -175,18 +176,20 @@ public class IndicatorService {
                 try {
                     String div = getCellValue(row.getCell(5));
                     // Проверяем, есть ли в строке несколько дивизионов (Дивизионы обязательны для всех)
-                    List<TargetIndicator.Division> divisions = TargetIndicator.Division.fromStringList(div);
+                    List<TargetIndicator.Division> divisions = TargetIndicator.Division.fromStringList(div, divisionConfig.getDivisions());
                     switch (structure) {
-                        case    "МЕРОПРИЯТИЕ", "РАЗДЕЛ", "ПОДРАЗДЕЛ", "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
+                        case "МЕРОПРИЯТИЕ", "РАЗДЕЛ", "ПОДРАЗДЕЛ", "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
                             if (div == null || div.trim().isEmpty()) {
                                 err = true;
                                 err_message.append("Пустое значение дивизиона ").append(row.getRowNum() + 1).append("; ");
                                 indicator.setDivisions("");
-                            } else if (divisions.stream().anyMatch(d -> d == null || d == TargetIndicator.Division.error)){
+                            } else if (divisions.stream().anyMatch(d -> "error".equals(d.getDisplayName()))) {
                                 err = true;
-                                indicator.setDivisions("");
+                                indicator.setDivisions("error");
                                 err_message.append("|!див_некорректный");
-                            } else indicator.setDivisions(TargetIndicator.Division.toString(divisions));
+                            } else {
+                                indicator.setDivisions(TargetIndicator.Division.toString(divisions));
+                            }
                         }
                         default -> indicator.setDivisions(TargetIndicator.Division.toString(divisions));
                     }
@@ -203,7 +206,7 @@ public class IndicatorService {
                     single_owner = owner.split(";");
                 }
                 switch (structure) {
-                    case    "МЕРОПРИЯТИЕ", "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
+                    case "МЕРОПРИЯТИЕ", "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
                         if (owner == null || owner.trim().isEmpty() || single_owner.length > 1) {
                             err = true;
                             err_message.append("|!влад");
@@ -227,14 +230,14 @@ public class IndicatorService {
                     single_coord = coord.split(";");
                 }
                 switch (structure) {
-                    case    "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
+                    case "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
                         if (coord == null || coord.trim().isEmpty() || !validateEmails(coord)) {
                             err = true;
                             err_message.append("|!коорд");
                             indicator.setCoordinator("Нет координатора");
                         } else indicator.setCoordinator(coord);
                     }
-                    case    "РАЗДЕЛ", "ПОДРАЗДЕЛ" -> {
+                    case "РАЗДЕЛ", "ПОДРАЗДЕЛ" -> {
                         if (single_coord.length > 1) {
                             err = true;
                             err_message.append("|!коорд-Один");
@@ -311,7 +314,7 @@ public class IndicatorService {
         error.setResponsibles(indicator.getResponsibles());
         error.setAdditionalResponsibles(indicator.getAdditionalResponsibles());
         error.setBusiness(indicator.getBusiness());
-        error.setErrorReason(reason);
+        error.setErrorMessage(reason);
         errorRepo.save(error);
     }
 
@@ -365,8 +368,6 @@ public class IndicatorService {
 
     private boolean validateEmails(String emails) {
         if (emails == null || emails.isEmpty()) return false;
-//        String[] emailArray = emails.split(",");
-        //разделения ';'
         String[] emailArray = emails.split(";");
         for (String email : emailArray) {
             if (!EMAIL_PATTERN.matcher(email.trim()).matches()) return false;
@@ -420,52 +421,6 @@ public class IndicatorService {
         }
     }
 
-    public TargetIndicator updateIndicator(Long id, TargetIndicator indicatorData) {
-        Optional<TargetIndicator> optionalIndicator = targetRepo.findById(id);
-
-        if (optionalIndicator.isPresent()) {
-            TargetIndicator indicator = optionalIndicator.get();
-
-            if (indicatorData.getNumber() != null) {
-                indicator.setNumber(indicatorData.getNumber());
-            }
-            if (indicatorData.getStructure() != null) {
-                indicator.setStructure(indicatorData.getStructure());
-            }
-            if (indicatorData.getLevel() != null) {
-                indicator.setLevel(indicatorData.getLevel());
-            }
-            if (indicatorData.getGoal() != null) {
-                indicator.setGoal(indicatorData.getGoal());
-            }
-            if (indicatorData.getDeadline() != null) {
-                indicator.setDeadline(indicatorData.getDeadline());
-            }
-            if (indicatorData.getDivision() != null) {
-                indicator.setDivisions(indicatorData.getDivisions());
-            }
-            if (indicatorData.getOwner() != null) {
-                indicator.setOwner(indicatorData.getOwner());
-            }
-            if (indicatorData.getCoordinator() != null) {
-                indicator.setCoordinator(indicatorData.getCoordinator());
-            }
-            if (indicatorData.getResponsibles() != null) {
-                indicator.setResponsibles(indicatorData.getResponsibles());
-            }
-            if (indicatorData.getAdditionalResponsibles() != null) {
-                indicator.setAdditionalResponsibles(indicatorData.getAdditionalResponsibles());
-            }
-            if (indicatorData.getBusiness() != null) {
-                indicator.setBusiness(indicatorData.getBusiness());
-            }
-
-            return targetRepo.save(indicator);
-        } else {
-            throw new RuntimeException("Indicator with id " + id + " not found");
-        }
-    }
-
     public ErrorIndicator updateError(Long id, ErrorIndicator errorData) {
         Optional<ErrorIndicator> optionalError = errorRepo.findById(id);
 
@@ -487,7 +442,7 @@ public class IndicatorService {
             if (errorData.getDeadline() != null) {
                 error.setDeadline(errorData.getDeadline());
             }
-            if (errorData.getDivision() != null) {
+            if (errorData.getDivisions() != null) {
                 error.setDivisions(errorData.getDivisions());
             }
             if (errorData.getOwner() != null) {
@@ -505,8 +460,8 @@ public class IndicatorService {
             if (errorData.getBusiness() != null) {
                 error.setBusiness(errorData.getBusiness());
             }
-            if (errorData.getErrorReason() != null) {
-                error.setErrorReason(errorData.getErrorReason());
+            if (errorData.getErrorMessage() != null) {  // Изменено: errorMessage вместо errorReason
+                error.setErrorMessage(errorData.getErrorMessage());
             }
 
             return errorRepo.save(error);
@@ -531,7 +486,7 @@ public class IndicatorService {
         header.createCell(8).setCellValue("Responsibles");
         header.createCell(9).setCellValue("Additional Responsibles");
         header.createCell(10).setCellValue("Business");
-        if (type.equals("errors")) header.createCell(11).setCellValue("Error Reason");
+        if (type.equals("errors")) header.createCell(11).setCellValue("Error Message");  // Изменено: "Error Message" вместо "Error Reason"
 
         int rowNum = 1;
         for (Object obj : indicators) {
@@ -543,7 +498,12 @@ public class IndicatorService {
                 row.createCell(2).setCellValue(ind.getLevel());
                 row.createCell(3).setCellValue(ind.getGoal());
                 row.createCell(4).setCellValue(ind.getDeadline());
-                row.createCell(5).setCellValue(ind.getDivision().ordinal()); // Теперь выводим строку с дивизионами
+                String divisionsStr = ind.getDivisions();
+                if (divisionsStr != null && !divisionsStr.trim().equals("[object Object]")) {
+                    row.createCell(5).setCellValue(divisionsStr);
+                } else {
+                    row.createCell(5).setCellValue("");  // Или оставьте пустым, или добавьте логику для парсинга, если divisions — JSON-массив
+                }
                 row.createCell(6).setCellValue(ind.getOwner());
                 row.createCell(7).setCellValue(ind.getCoordinator());
                 row.createCell(8).setCellValue(ind.getResponsibles());
@@ -556,13 +516,18 @@ public class IndicatorService {
                 row.createCell(2).setCellValue(err.getLevel());
                 row.createCell(3).setCellValue(err.getGoal());
                 row.createCell(4).setCellValue(err.getDeadline());
-                row.createCell(5).setCellValue(err.getDivision().ordinal()); // Теперь выводим строку с дивизионами
+                String divisionsStr = err.getDivisions();
+                if (divisionsStr != null && !divisionsStr.trim().equals("[object Object]")) {
+                    row.createCell(5).setCellValue(divisionsStr);
+                } else {
+                    row.createCell(5).setCellValue("");  // Или оставьте пустым, или добавьте логику для парсинга, если divisions — JSON-массив
+                }
                 row.createCell(6).setCellValue(err.getOwner());
                 row.createCell(7).setCellValue(err.getCoordinator());
                 row.createCell(8).setCellValue(err.getResponsibles());
                 row.createCell(9).setCellValue(err.getAdditionalResponsibles());
                 row.createCell(10).setCellValue(err.getBusiness());
-                row.createCell(11).setCellValue(err.getErrorReason());
+                row.createCell(11).setCellValue(err.getErrorMessage());  // Изменено: getErrorMessage() вместо getErrorReason()
             }
         }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -576,8 +541,8 @@ public class IndicatorService {
                 .orElseThrow(() -> new RuntimeException("Indicator not found with id: " + id));
     }
 
-    // Пример использования save()
     public TargetIndicator saveIndicator(TargetIndicator indicator) {
         return targetRepo.save(indicator);
     }
+
 }

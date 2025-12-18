@@ -1,6 +1,7 @@
 package kvo.order.model;
 
 import jakarta.persistence.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,7 +25,7 @@ public class ErrorIndicator {
     private String responsibles;
     private String additionalResponsibles;
     private String business;
-    private String errorReason;
+    private String errorMessage;  // Переименовано с errorReason на errorMessage
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -48,33 +49,38 @@ public class ErrorIndicator {
         this.divisions = divisions;
     }
 
-    // Вспомогательный метод для получения списка дивизионов
-    public List<TargetIndicator.Division> getDivisionList() {
-        return TargetIndicator.Division.fromStringList(this.divisions);
+    // Вспомогательный метод для получения списка дивизионов (как List<String>)
+    public List<String> getDivisionList() {
+        if (this.divisions == null || this.divisions.trim().isEmpty()) {
+            return List.of();
+        }
+        return Arrays.stream(this.divisions.split(";"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
-    // Вспомогательный метод для установки списка дивизионов
-    public void setDivisionList(List<TargetIndicator.Division> divisions) {
-        this.divisions = TargetIndicator.Division.toString(divisions);
+    // Вспомогательный метод для установки списка дивизионов (как List<String>)
+    public void setDivisionList(List<String> divisions) {
+        this.divisions = String.join("; ", divisions);
     }
 
-    // Старый геттер для обратной совместимости
+    // Старый геттер для обратной совместимости (теперь возвращает String)
     @Transient
-    public TargetIndicator.Division getDivision() {
-        List<TargetIndicator.Division> list = getDivisionList();
-        return list.isEmpty() ? TargetIndicator.Division.EMPTY : list.get(0);
+    public String getDivision() {
+        List<String> list = getDivisionList();
+        return list.isEmpty() ? "" : list.get(0);
     }
 
-    // Старый сеттер для обратной совместимости
+    // Старый сеттер для обратной совместимости (принимает String)
     @Transient
-    public void setDivision(TargetIndicator.Division division) {
-        if (division == null || division == TargetIndicator.Division.EMPTY) {
+    public void setDivision(String division) {
+        if (division == null || division.trim().isEmpty()) {
             this.divisions = "";
         } else {
-            this.divisions = division.getDisplayName();
+            this.divisions = division;
         }
     }
-
     public String getOwner() { return owner; }
     public void setOwner(String owner) { this.owner = owner; }
     public String getCoordinator() { return coordinator; }
@@ -85,6 +91,6 @@ public class ErrorIndicator {
     public void setAdditionalResponsibles(String additionalResponsibles) { this.additionalResponsibles = additionalResponsibles; }
     public String getBusiness() { return business; }
     public void setBusiness(String business) { this.business = business; }
-    public String getErrorReason() { return errorReason; }
-    public void setErrorReason(String errorReason) { this.errorReason = errorReason; }
+    public String getErrorMessage() { return errorMessage; }  // Переименован геттер
+    public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }  // Переименован сеттер
 }

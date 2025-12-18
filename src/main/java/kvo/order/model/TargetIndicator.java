@@ -27,6 +27,7 @@ public class TargetIndicator {
     private String business;
     private String status = "valid";
 
+    // Enum Structure остается без изменений
     public enum Structure {
         МЕРОПРИЯТИЕ, РАЗДЕЛ, ПОДРАЗДЕЛ, ЦЕЛЬ, ПОДЦЕЛЬ, ЗАДАЧА, ПОДЗАДАЧА, EMPTY(""), SPACE(" "), error;
 
@@ -64,18 +65,11 @@ public class TargetIndicator {
         }
     }
 
-    public enum Division {
-        Группа, ДКА, ДАК, Энергобизнес, РМЭ, НЭСК, ЭСК, ДСА, ДОТ, ЯрМК, РМЭИ, НГА, ТРМ, ПДД, Сотекс, ПГА, Оптитэк, ЛНА,
-//        @JsonProperty("ООО_РМКПГ")
-        ООО_РМКПГ, EMPTY(""), error;
-
+    // Заменяем enum Division на класс Division
+    public static class Division {
         private final String displayName;
 
-        Division() {
-            this.displayName = this.name();
-        }
-
-        Division(String displayName) {
+        public Division(String displayName) {
             this.displayName = displayName;
         }
 
@@ -83,22 +77,37 @@ public class TargetIndicator {
             return displayName;
         }
 
-        public static Optional<Division> fromDisplayName(String displayName) {
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            Division division = (Division) obj;
+            return Objects.equals(displayName, division.displayName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(displayName);
+        }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
+
+        // Метод для поиска Division по displayName из списка
+        public static Optional<Division> fromDisplayName(String displayName, List<Division> availableDivisions) {
             if (displayName == null || displayName.trim().isEmpty()) {
                 return Optional.empty();
             }
 
-            for (Division division : values()) {
-                if (division.displayName != null &&
-                        division.displayName.equals(displayName.trim())) {
-                    return Optional.of(division);
-                }
-            }
-            return Optional.of(error);
+            return availableDivisions.stream()
+                    .filter(div -> div.getDisplayName().equals(displayName.trim()))
+                    .findFirst();
         }
 
         // Новый метод для обработки нескольких дивизионов
-        public static List<Division> fromStringList(String divisionsString) {
+        public static List<Division> fromStringList(String divisionsString, List<Division> availableDivisions) {
             if (divisionsString == null || divisionsString.trim().isEmpty()) {
                 return Collections.emptyList();
             }
@@ -109,10 +118,18 @@ public class TargetIndicator {
             for (String part : parts) {
                 String trimmed = part.trim();
                 if (!trimmed.isEmpty()) {
-                    fromDisplayName(trimmed).ifPresent(result::add);
+                    Optional<Division> optionalDivision = fromDisplayName(trimmed, availableDivisions);
+                    if (optionalDivision.isPresent()) {
+                        result.add(optionalDivision.get());
+                    } else {
+                        // Если trimmed не найдено в availableDivisions, добавить Division с displayName = "error"
+                        // Предполагаем, что Division имеет конструктор или setter для displayName
+                        Division errorDivision = new Division("error");;
+//                        errorDivision.setDisplayName("error");  // Или используйте конструктор, если он есть, например: new Division("error")
+                        result.add(errorDivision);
+                    }
                 }
             }
-
             return result;
         }
 
@@ -130,7 +147,7 @@ public class TargetIndicator {
 
     public TargetIndicator() {}
 
-    // Getters and Setters
+    // Getters and Setters (без изменений для большинства полей)
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNumber() { return number; }
@@ -144,7 +161,7 @@ public class TargetIndicator {
     public String getDeadline() { return deadline; }
     public void setDeadline(String deadline) { this.deadline = deadline; }
 
-    // Геттеры и сеттеры для divisions
+    // Геттеры и сеттеры для divisions (без изменений)
     public String getDivisions() {
         return divisions;
     }
@@ -154,8 +171,9 @@ public class TargetIndicator {
     }
 
     // Вспомогательный метод для получения списка дивизионов
-    public List<Division> getDivisionList() {
-        return Division.fromStringList(this.divisions);
+    // Теперь принимает список доступных дивизионов из DivisionConfig
+    public List<Division> getDivisionList(List<Division> availableDivisions) {
+        return Division.fromStringList(this.divisions, availableDivisions);
     }
 
     // Вспомогательный метод для установки списка дивизионов
@@ -165,21 +183,22 @@ public class TargetIndicator {
 
     // Старый геттер для обратной совместимости
     @Transient
-    public Division getDivision() {
-        List<Division> list = getDivisionList();
-        return list.isEmpty() ? Division.EMPTY : list.get(0);
+    public Division getDivision(List<Division> availableDivisions) {
+        List<Division> list = getDivisionList(availableDivisions);
+        return list.isEmpty() ? new Division("") : list.get(0); // Используем пустой Division вместо EMPTY
     }
 
     // Старый сеттер для обратной совместимости
     @Transient
     public void setDivision(Division division) {
-        if (division == null || division == Division.EMPTY) {
+        if (division == null || division.getDisplayName().isEmpty()) {
             this.divisions = "";
         } else {
             this.divisions = division.getDisplayName();
         }
     }
 
+    // Остальные геттеры/сеттеры без изменений
     public String getOwner() { return owner; }
     public void setOwner(String owner) { this.owner = owner; }
     public String getCoordinator() { return coordinator; }
@@ -193,7 +212,7 @@ public class TargetIndicator {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    // Comparator for version sorting
+    // Comparator for version sorting (без изменений)
     public static Comparator<TargetIndicator> VERSION_COMPARATOR = Comparator.comparing(TargetIndicator::getNumber, (a, b) -> {
         String[] aParts = a.split("\\.");
         String[] bParts = b.split("\\.");

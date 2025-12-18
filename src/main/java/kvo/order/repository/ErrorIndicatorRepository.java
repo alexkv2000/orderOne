@@ -17,8 +17,9 @@ public interface ErrorIndicatorRepository extends JpaRepository<ErrorIndicator, 
     // Найти по структуре
     List<ErrorIndicator> findByStructure(TargetIndicator.Structure structure);
 
+    List<ErrorIndicator> findByErrorMessage(String errorMessage);
     // Найти по причине ошибки
-    List<ErrorIndicator> findByErrorReasonContaining(String reason);
+    List<ErrorIndicator> findByErrorMessageContaining(String reason);
 
     // Найти по дивизиону
     List<ErrorIndicator> findByDivisionContaining(String division);
