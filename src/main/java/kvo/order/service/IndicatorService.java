@@ -86,11 +86,9 @@ public class IndicatorService {
                             }
                         }
                     } else { //только "Раздел" имеет длину 1.
-                        switch (cell1Value) {
-                            case "Раздел" -> {
-                                err = true;
-                                err_message.append("|!ожидается_корневой_номер");
-                            }
+                        if (cell1Value.equals("Раздел")) {
+                            err = true;
+                            err_message.append("|!ожидается_корневой_номер");
                         }
                     }
                 }
@@ -107,13 +105,11 @@ public class IndicatorService {
                         case "МЕРОПРИЯТИЕ", "РАЗДЕЛ", "ПОДРАЗДЕЛ", "ЦЕЛЬ", "ПОДЦЕЛЬ", "ЗАДАЧА", "ПОДЗАДАЧА" -> {
                             try {
                                 indicator.setStructure(TargetIndicator.Structure.valueOf(stringStructure));
-                                break;
                             } catch (Exception e) {
                                 log.error("Ошибка_структуры: {}", e.toString());
                                 err = true;
                                 indicator.setStructure(TargetIndicator.Structure.error);
                                 err_message.append("Ошибка_структуры");
-                                break;
                             }
                         }
                         default -> {
@@ -323,9 +319,10 @@ public class IndicatorService {
             return "";
         }
         switch (cell.getCellType()) {
-            case STRING:
+            case STRING -> {
                 return cell.getStringCellValue().trim();
-            case NUMERIC:
+            }
+            case NUMERIC -> {
                 if (DateUtil.isCellDateFormatted(cell)) {
                     SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
                     return dateFormat.format(cell.getDateCellValue());
@@ -337,9 +334,11 @@ public class IndicatorService {
                         return String.valueOf(numericValue);
                     }
                 }
-            case BOOLEAN:
+            }
+            case BOOLEAN -> {
                 return String.valueOf(cell.getBooleanCellValue());
-            case FORMULA:
+            }
+            case FORMULA -> {
                 try {
                     if (DateUtil.isCellDateFormatted(cell)) {
                         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
@@ -350,8 +349,10 @@ public class IndicatorService {
                 } catch (Exception e) {
                     return cell.getCellFormula();
                 }
-            default:
+            }
+            default -> {
                 return "";
+            }
         }
     }
 
@@ -491,8 +492,7 @@ public class IndicatorService {
         int rowNum = 1;
         for (Object obj : indicators) {
             Row row = sheet.createRow(rowNum++);
-            if (obj instanceof TargetIndicator) {
-                TargetIndicator ind = (TargetIndicator) obj;
+            if (obj instanceof TargetIndicator ind) {
                 row.createCell(0).setCellValue(ind.getNumber());
                 row.createCell(1).setCellValue(ind.getStructure().toString());
                 row.createCell(2).setCellValue(ind.getLevel());

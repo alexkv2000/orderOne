@@ -168,10 +168,24 @@
         indicators.forEach(indicator => {
             const row = document.createElement('tr');
 
-            // Получаем список дивизионов как массив (разделяем по запятой или точке с запятой)
+            // Отладка: проверьте, что такое divisions для indicator
+            console.log('Indicator divisions:', indicator.divisions, typeof indicator.divisions);
+
             let divisionArray = [];
             if (indicator.divisions) {
-                divisionArray = indicator.divisions.split(/[,;]+/).map(d => d.trim()).filter(d => d);
+                if (Array.isArray(indicator.divisions)) {
+                    // Если массив объектов, извлеките имена (предполагая поле name)
+                    divisionArray = indicator.divisions.map(d => {
+                        if (typeof d === 'string') return d;
+                        return d.displayName || d.value || d.toString(); // Адаптируйте под поля Division
+                    });
+                    console.log('Division array:', divisionArray);
+                } else if (typeof indicator.divisions === 'string') {
+                    divisionArray = indicator.divisions.split(/[,;]+/).map(d => d.trim()).filter(d => d);
+                    console.log('Division array String:', divisionArray);
+                } else {
+                    console.warn('Indicator divisions не является массивом или строкой:', indicator.divisions);
+                }
             }
 
             row.innerHTML = `
@@ -211,11 +225,26 @@
             const row = document.createElement('tr');
             row.className = 'error-row';
 
-            let divisionArray = [];
-            if (error.divisions) {
-                divisionArray = error.divisions.split(/[,;]+/).map(d => d.trim()).filter(d => d);
-            }
+            // Отладка: проверьте, что такое divisions для error
+            console.log('Error divisions:', error.divisions, typeof error.divisions);
 
+            let divisionArray = [];
+
+            if (error.divisions) {
+                if (Array.isArray(error.divisions)) {
+                    // Если массив объектов, извлеките имена (предполагая поле name)
+                    divisionArray = error.divisions.map(d => {
+                        if (typeof d === 'string') return d;
+                        return d.displayName || d.value || d.toString(); // Адаптируйте под поля Division
+                    });
+                    console.log('Division array:', divisionArray);
+                } else if (typeof error.divisions === 'string') {
+                    divisionArray = error.divisions.split(/[,;]+/).map(d => d.trim()).filter(d => d);
+                    console.log('Division array String:', divisionArray);
+                } else {
+                    console.warn('Indicator divisions не является массивом или строкой:', indicator.divisions);
+                }
+            }
             row.innerHTML = `
             <td><input type="checkbox" name="errorIds" value="${error.id}"></td>
             <td>${error.id}</td>
@@ -238,7 +267,7 @@
             <td><input type="text" name="responsibles" value="${error.responsibles || ''}"></td>
             <td><input type="text" name="additionalResponsibles" value="${error.additionalResponsibles || ''}"></td>
             <td><input type="text" name="business" value="${error.business || ''}"></td>
-            <td>${error.errorReason || ''}</td>
+            <td>${error.errorMessage || ''}</td>
             <td>
                 <button onclick="updateError(${error.id}, this.parentNode.parentNode)">Обновить</button>
             </td>
@@ -246,6 +275,7 @@
             tbody.appendChild(row);
         });
     }
+
 
     function renderOptions(options, selectedValue) {
         return options.map(option => {
@@ -255,9 +285,13 @@
     }
 
     function renderMultipleOptions(options, selectedValues) {
+        if (!Array.isArray(selectedValues)) {
+            selectedValues = [];
+        }
         return options.map(option => {
-            const selected = selectedValues.includes(option) ? 'selected' : '';
-            return `<option value="${option}" ${selected}>${option}</option>`;
+            const optionValue = option.displayName || option.value || option.toString();
+            const selected = selectedValues.includes(optionValue) ? 'selected' : '';
+            return `<option value="${optionValue}" ${selected}>${optionValue}</option>`;
         }).join('');
     }
 
