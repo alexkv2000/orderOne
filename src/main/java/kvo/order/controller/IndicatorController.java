@@ -139,14 +139,17 @@ public class IndicatorController {
                 if (data.containsKey("deadline")) {
                     indicator.setDeadline(data.get("deadline"));
                 }
+                if (data.containsKey("deadlineend")) {
+                    indicator.setDeadlineEnd(data.get("deadlineend"));
+                }
+                if (data.containsKey("coordinator")) {
+                    indicator.setCoordinator(data.get("coordinator"));
+                }
                 if (data.containsKey("divisions")) {
                     indicator.setDivisions(data.get("divisions"));  // Уже String — корректно
                 }
                 if (data.containsKey("owner")) {
                     indicator.setOwner(data.get("owner"));
-                }
-                if (data.containsKey("coordinator")) {
-                    indicator.setCoordinator(data.get("coordinator"));
                 }
                 if (data.containsKey("responsibles")) {
                     indicator.setResponsibles(data.get("responsibles"));

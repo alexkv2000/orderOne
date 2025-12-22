@@ -15,6 +15,7 @@
         .goal-col { width: 30%; min-width: 300px; }
         .structure-col { width: 8%; min-width: 120px; }
         .deadline-col { width: 5%; min-width: 100px; }
+        .deadlineend-col { width: 5%; min-width: 100px; }
         .division-col { width: 8%; min-width: 140px; }
         .owner-col { width: 8%; min-width: 140px; }
         .coordinator-col { width: 8%; min-width: 140px; }
@@ -60,10 +61,11 @@
         <th class="structure-col">Структура</th>
         <th class="level-col">Уровень</th>
         <th class="goal-col">Цель</th>
-        <th class="deadline-col">Срок</th>
+        <th class="deadline-col">Дата_старт</th>
+        <th class="deadlineend-col">Дата_стоп</th>
+        <th class="coordinator-col">Координатор</th>
         <th class="division-col">Дивизион</th>
         <th class="owner-col">Владелец</th>
-        <th class="coordinator-col">Координатор</th>
         <th class="responsibles-col">Соисполнители</th>
         <th class="additional-responsibles-col">Доп. ответственные</th>
         <th class="business-col">Бизнес</th>
@@ -88,10 +90,11 @@
             <th class="structure-col">Структура</th>
             <th class="level-col">Уровень</th>
             <th class="goal-col">Цель</th>
-            <th class="deadline-col">Срок</th>
+            <th class="deadline-col">Дата_старт</th>
+            <th class="deadlineend-col">Дата_стоп</th>
+            <th class="coordinator-col">Координатор</th>
             <th class="division-col">Дивизион</th>
             <th class="owner-col">Владелец</th>
-            <th class="coordinator-col">Координатор</th>
             <th class="responsibles-col">Соисполнители</th>
             <th class="additional-responsibles-col">Доп. ответственные</th>
             <th class="business-col">Бизнес</th>
@@ -199,13 +202,14 @@
             <td><input type="text" name="level" value="${indicator.level || ''}"></td>
             <td><input type="text" name="goal" value="${indicator.goal || ''}"></td>
             <td><input type="text" name="deadline" value="${indicator.deadline || ''}"></td>
+            <td><input type="text" name="deadlineEnd" value="${indicator.deadlineEnd || ''}"></td>
+            <td><input type="text" name="coordinator" value="${indicator.coordinator || ''}"></td>
             <td>
                 <select name="divisions" multiple>
                     ${renderMultipleOptions(divisions, divisionArray)}
                 </select>
             </td>
             <td><input type="text" name="owner" value="${indicator.owner || ''}"></td>
-            <td><input type="text" name="coordinator" value="${indicator.coordinator || ''}"></td>
             <td><input type="text" name="responsibles" value="${indicator.responsibles || ''}"></td>
             <td><input type="text" name="additionalResponsibles" value="${indicator.additionalResponsibles || ''}"></td>
             <td><input type="text" name="business" value="${indicator.business || ''}"></td>
@@ -257,13 +261,14 @@
             <td><input type="text" name="level" value="${error.level || ''}"></td>
             <td><input type="text" name="goal" value="${error.goal || ''}"></td>
             <td><input type="text" name="deadline" value="${error.deadline || ''}"></td>
+            <td><input type="text" name="deadlineEnd" value="${error.deadlineEnd || ''}"></td>
+            <td><input type="text" name="coordinator" value="${error.coordinator || ''}"></td>
             <td>
                 <select name="divisions" multiple>
                     ${renderMultipleOptions(divisions, divisionArray)}
                 </select>
             </td>
             <td><input type="text" name="owner" value="${error.owner || ''}"></td>
-            <td><input type="text" name="coordinator" value="${error.coordinator || ''}"></td>
             <td><input type="text" name="responsibles" value="${error.responsibles || ''}"></td>
             <td><input type="text" name="additionalResponsibles" value="${error.additionalResponsibles || ''}"></td>
             <td><input type="text" name="business" value="${error.business || ''}"></td>
@@ -308,9 +313,10 @@
             level: row.querySelector('input[name="level"]').value || '',
             goal: row.querySelector('input[name="goal"]').value,
             deadline: row.querySelector('input[name="deadline"]').value || '',
+            deadlineEnd: row.querySelector('input[name="deadlineEnd"]').value || '',
+            coordinator: row.querySelector('input[name="coordinator"]').value || '',
             divisions: selectedDivisions, // Отправляем строку с разделителями
             owner: row.querySelector('input[name="owner"]').value || '',
-            coordinator: row.querySelector('input[name="coordinator"]').value || '',
             responsibles: row.querySelector('input[name="responsibles"]').value || '',
             additionalResponsibles: row.querySelector('input[name="additionalResponsibles"]').value || '',
             business: row.querySelector('input[name="business"]').value || ''
@@ -351,9 +357,10 @@
             level: row.querySelector('input[name="level"]').value || '',
             goal: row.querySelector('input[name="goal"]').value,
             deadline: row.querySelector('input[name="deadline"]').value || '',
+            deadlineEnd: row.querySelector('input[name="deadlineEnd"]').value || '',
+            coordinator: row.querySelector('input[name="coordinator"]').value || '',
             divisions: selectedDivisions, // Отправляем строку с разделителями
             owner: row.querySelector('input[name="owner"]').value || '',
-            coordinator: row.querySelector('input[name="coordinator"]').value || '',
             responsibles: row.querySelector('input[name="responsibles"]').value || '',
             additionalResponsibles: row.querySelector('input[name="additionalResponsibles"]').value || '',
             business: row.querySelector('input[name="business"]').value  || ''

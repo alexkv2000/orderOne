@@ -45,7 +45,7 @@ public class DivisionConfig {
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("app.divisions=")) {
                     String value = line.substring("app.divisions=".length()).trim();
-                    // Разбираем строку: разделяем по , и игнорируем пробелы
+                    // Разбираем строку: разделяем по, и игнорируем пробелы
                     String[] parts = value.split("[,\\s]+");
                     for (String part : parts) {
                         String trimmed = part.trim();

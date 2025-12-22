@@ -16,12 +16,11 @@ public class ErrorIndicator {
     private String level;
     private String goal;
     private String deadline;
-
+    private String deadlineEnd;
+    private String coordinator;
     // Изменяем на String для хранения нескольких значений
     private String divisions;
-
     private String owner;
-    private String coordinator;
     private String responsibles;
     private String additionalResponsibles;
     private String business;
@@ -39,6 +38,8 @@ public class ErrorIndicator {
     public void setGoal(String goal) { this.goal = goal; }
     public String getDeadline() { return deadline; }
     public void setDeadline(String deadline) { this.deadline = deadline; }
+    public String getDeadlineEnd() { return deadlineEnd; }
+    public void setDeadlineEnd(String deadlineEnd) { this.deadlineEnd = deadlineEnd; }
 
     // Геттеры и сеттеры для divisions
     public String getDivisions() {

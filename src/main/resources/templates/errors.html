@@ -73,10 +73,11 @@
         <th>Структура</th>
         <th>Уровень</th>
         <th>Цель</th>
-        <th>Срок</th>
+        <th>Дата_старт</th>
+        <th>Дата_стоп</th>
+        <th>Координатор</th>
         <th>Дивизион</th>
         <th>Владелец</th>
-        <th>Координатор</th>
         <th>Соисполнители</th>
         <th>Дополнительные ответственные</th>
         <th>Бизнес</th>
@@ -91,9 +92,10 @@
         <td th:text="${error.level}"></td>
         <td th:text="${error.goal}"></td>
         <td th:text="${error.deadline}"></td>
+        <td th:text="${error.deadlineEnd}"></td>
+        <td th:text="${error.coordinator}"></td>
         <td th:text="${error.division}"></td>
         <td th:text="${error.owner}"></td>
-        <td th:text="${error.coordinator}"></td>
         <td th:text="${error.responsibles}"></td>
         <td th:text="${error.additionalResponsibles}"></td>
         <td th:text="${error.business}"></td>
