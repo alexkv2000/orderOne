@@ -21,6 +21,8 @@ public class DivisionConfig {
 //    private static String SETTINGS_FILE = Paths.get("config", "setting.txt").toString();
     private volatile List<TargetIndicator.Division> divisions = Collections.emptyList();
     private static final String SETTINGS_FILE = new StringBuilder()
+//            .append(System.getProperty("user.dir"))
+//            .append(java.io.File.separator)
             .append("config")
             .append(java.io.File.separator)
             .append("setting.txt")
@@ -39,7 +41,7 @@ public class DivisionConfig {
     // Загрузка из файла
     private synchronized void loadDivisions() {
         List<TargetIndicator.Division> newDivisions = new ArrayList<>();
-        System.out.println(SETTINGS_FILE);
+        System.out.println("DIR setting: " + SETTINGS_FILE);
         try (BufferedReader reader = new BufferedReader(new FileReader(SETTINGS_FILE))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -67,7 +69,7 @@ public class DivisionConfig {
     }
 
     // Scheduled task: проверка каждые 15 минут
-    @Scheduled(fixedRate = 300000) // 300000  5 минут = 900 секунд * 1000
+    @Scheduled(fixedRate = 60000) // 300000  5 минут = 900 секунд * 1000
     public void refreshDivisions() {
         logger.info("Проверка обновлений в settings.txt...");
         loadDivisions();
