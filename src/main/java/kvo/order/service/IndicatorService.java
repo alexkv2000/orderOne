@@ -139,10 +139,10 @@ public class IndicatorService {
                 // Цель
                 try {
                     String dateValue = getFormattedDateCellValue(row.getCell(3));
-                    if (dateValue != null && dateValue.length() > 255) {
+                    if (dateValue == null) { //dateValue != null && dateValue.length() > 255
                         err = true;
                         dateValue = dateValue.substring(0, 254);
-                        err_message.append("|!длинна Цели");
+                        err_message.append("|!Нет цели NULL");
                     }
                     indicator.setGoal(dateValue);
                 } catch (IllegalArgumentException e) {
@@ -281,7 +281,8 @@ public class IndicatorService {
                 String resp = getCellValue(row.getCell(9));
                 if (!validateMultipleEmails(resp)) {
                     err = true;
-                    err_message.append("|!отв");
+                    err_message.append("|!Соисп.");
+                    indicator.setResponsibles(resp);
                 } else {
                     indicator.setResponsibles(resp);
                 }

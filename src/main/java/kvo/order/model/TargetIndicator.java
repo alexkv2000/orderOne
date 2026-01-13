@@ -14,6 +14,8 @@ public class TargetIndicator {
     @Enumerated(EnumType.STRING)
     private Structure structure;
     private String level;
+    @Lob
+    @Column(length = 10000)
     private String goal;
     private String deadline;
     private String deadlineEnd;
@@ -21,6 +23,8 @@ public class TargetIndicator {
     // Изменяем на String для хранения нескольких значений
     private String divisions; // Храним как "Группа,ДКА,Энергобизнес"
     private String owner;
+    @Lob
+    @Column(length = 10000)
     private String responsibles;
     private String additionalResponsibles;
     private String business;

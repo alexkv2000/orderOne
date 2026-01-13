@@ -17,16 +17,16 @@ import java.util.List;
 @Component
 public class DivisionConfig {
     private static final Logger logger = LoggerFactory.getLogger(DivisionConfig.class);
-
+    private static String SETTINGS_FILE = Paths.get("C:\\Users\\alexe\\IdeaProjects\\orderOne\\src\\main\\java\\kvo\\order\\config\\setting.txt").toString();
 //    private static String SETTINGS_FILE = Paths.get("config", "setting.txt").toString();
     private volatile List<TargetIndicator.Division> divisions = Collections.emptyList();
-    private static final String SETTINGS_FILE = new StringBuilder()
-//            .append(System.getProperty("user.dir"))
+//    private static final String SETTINGS_FILE = new StringBuilder()
+////            .append(System.getProperty("user.dir"))
+////            .append(java.io.File.separator)
+//            .append("config")
 //            .append(java.io.File.separator)
-            .append("config")
-            .append(java.io.File.separator)
-            .append("setting.txt")
-            .toString();
+//            .append("setting.txt")
+//            .toString();
 
     // Инициализация при старте
     public DivisionConfig() {
