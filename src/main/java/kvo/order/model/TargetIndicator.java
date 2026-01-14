@@ -116,7 +116,7 @@ public class TargetIndicator {
             }
 
             List<Division> result = new ArrayList<>();
-            String[] parts = divisionsString.split("[,\\s;]+");
+            String[] parts = divisionsString.split("[\\s;]+");
 
             for (String part : parts) {
                 String trimmed = part.trim();

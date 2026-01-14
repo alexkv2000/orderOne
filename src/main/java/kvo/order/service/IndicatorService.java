@@ -57,12 +57,18 @@ public class IndicatorService {
                 TargetIndicator indicator = new TargetIndicator();
 
                 String numberValue = getCellValue(row.getCell(0));
+
                 if (numberValue == null || numberValue.trim().isEmpty()) {
                     err_message.append("Пустой номер в строке ").append(row.getRowNum() + 1).append("; ");
                     err = true;
-                } else if (!numberValue.trim().isEmpty() && !numberValue.endsWith(".")) {
-                    numberValue = numberValue + ".";
-                }
+                } else if (!numberValue.endsWith(".")) {
+                    err_message.append("!ожидается_число").append(row.getRowNum() + 1).append("; ");
+                    err = true;
+                } else if (numberValue.indexOf(' ')!=-1){
+                    err = true;
+                    err_message.append("!ожидается_число").append(row.getRowNum() + 1).append("; ");
+                };
+
 
                 if (numberValue != null && !numberValue.trim().isEmpty()) {
                     String[] numberParts = numberValue.split("\\.");
@@ -356,7 +362,7 @@ public class IndicatorService {
         }
         switch (cell.getCellType()) {
             case STRING -> {
-                return cell.getStringCellValue().trim();
+                return cell.getStringCellValue();
             }
             case NUMERIC -> {
                 if (DateUtil.isCellDateFormatted(cell)) {
