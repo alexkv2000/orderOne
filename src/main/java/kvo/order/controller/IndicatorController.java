@@ -77,9 +77,14 @@ public class IndicatorController {
                 return response;
             }
 
-            service.importFromXls(file);
-            response.put("success", true);
-            response.put("message", "File uploaded successfully!");
+            boolean isCorrectXLS = service.importFromXls(file);
+            if (isCorrectXLS) {
+                response.put("success", true);
+                response.put("message", "File uploaded successfully!");
+            } else {
+                response.put("success", false);
+                response.put("message", "Error structure file (СВОД лист, пустые строки...)");
+            }
         } catch (Exception e) {
             logger.error("Error during file upload: ", e);
             String errorMessage = e.getMessage() != null ? e.getMessage() : "Неизвестная ошибка при обработке файла";
