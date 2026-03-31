@@ -18,7 +18,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class DivisionConfig {
     private static final Logger logger = LoggerFactory.getLogger(DivisionConfig.class);
 
-//    private static String SETTINGS_FILE = Paths.get("config", "setting.txt").toString();
     private final List<TargetIndicator.Division> divisions = new CopyOnWriteArrayList<>();
     private static final String SETTINGS_FILE = Paths.get( "setting.properties").toString();
 

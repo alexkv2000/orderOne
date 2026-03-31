@@ -1,5 +1,6 @@
 package kvo.order.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -14,6 +15,7 @@ public class TargetIndicator {
     private Structure structure;
     private String level;
     @Lob
+    @Column(length = 10000)
     private String goal;
     private String deadline;
     private String deadlineEnd;
@@ -21,6 +23,8 @@ public class TargetIndicator {
     // Изменяем на String для хранения нескольких значений
     private String divisions; // Храним как "Группа,ДКА,Энергобизнес"
     private String owner;
+    @Lob
+    @Column(length = 10000)
     private String responsibles;
     private String additionalResponsibles;
     private String business;
@@ -28,9 +32,13 @@ public class TargetIndicator {
 
     // Enum Structure остается без изменений
     public enum Structure {
-        EVENT("МЕРОПРИЯТИЕ"), SECTION("РАЗДЕЛ"), SUBSECTION("ПОДРАЗДЕЛ"), GOAL("ЦЕЛЬ"), SUBGOAL("ПОДЦЕЛЬ"), TASK("ЗАДАЧА"), SUBTASK("ПОДЗАДАЧА"), EMPTY(""), SPACE(" "), ERROR("error");
+        МЕРОПРИЯТИЕ, РАЗДЕЛ, ПОДРАЗДЕЛ, ЦЕЛЬ, ПОДЦЕЛЬ, ЗАДАЧА, ПОДЗАДАЧА, EMPTY(""), SPACE(" "), error;
 
         private final String displayName;
+
+        Structure() {
+            this.displayName = this.name().toUpperCase();
+        }
 
         Structure(String displayName) {
             this.displayName = displayName;
@@ -41,14 +49,14 @@ public class TargetIndicator {
         }
 
         public static Structure fromDisplayName(String displayName) {
-            if (displayName == null) {
+            if (displayName == null || displayName.trim().isEmpty()) {
                 return EMPTY;
             }
             String trimmed = displayName.trim();
 
             // Проверяем специальные случаи
-            if (displayName.equals(" ")) return SPACE;
             if (trimmed.isEmpty()) return EMPTY;
+            if (displayName.equals(" ")) return SPACE;
 
             for (Structure struct : values()) {
                 if (struct.displayName != null &&
@@ -56,7 +64,7 @@ public class TargetIndicator {
                     return struct;
                 }
             }
-            return ERROR;
+            return error;
         }
     }
 
@@ -108,7 +116,7 @@ public class TargetIndicator {
             }
 
             List<Division> result = new ArrayList<>();
-            String[] parts = divisionsString.split("[,\\s;]+");
+            String[] parts = divisionsString.split("[\\s;]+");
 
             for (String part : parts) {
                 String trimmed = part.trim();
@@ -118,7 +126,9 @@ public class TargetIndicator {
                         result.add(optionalDivision.get());
                     } else {
                         // Если trimmed не найдено в availableDivisions, добавить Division с displayName = "error"
-                        Division errorDivision = new Division("error");
+                        // Предполагаем, что Division имеет конструктор или setter для displayName
+                        Division errorDivision = new Division("error");;
+//                        errorDivision.setDisplayName("error");  // Или используйте конструктор, если он есть, например: new Division("error")
                         result.add(errorDivision);
                     }
                 }
@@ -138,9 +148,7 @@ public class TargetIndicator {
         }
     }
 
-    public TargetIndicator() {
-        // Default constructor
-    }
+    public TargetIndicator() {}
 
     // Getters and Setters (без изменений для большинства полей)
     public Long getId() { return id; }
@@ -210,13 +218,13 @@ public class TargetIndicator {
     public void setStatus(String status) { this.status = status; }
 
     // Comparator for version sorting (без изменений)
-    public static final Comparator<TargetIndicator> VERSION_COMPARATOR = Comparator.comparing(TargetIndicator::getNumber, Comparator.nullsLast((a, b) -> {
+    public static Comparator<TargetIndicator> VERSION_COMPARATOR = Comparator.comparing(TargetIndicator::getNumber, (a, b) -> {
         String[] aParts = a.split("\\.");
         String[] bParts = b.split("\\.");
         int len = Math.max(aParts.length, bParts.length);
         for (int i = 0; i < len; i++) {
-            int aPart;
-            int bPart;
+            int aPart = 0;
+            int bPart = 0;
             try {
                 aPart = i < aParts.length ? Integer.parseInt(aParts[i]) : 0;
             } catch (NumberFormatException e) {
@@ -230,5 +238,5 @@ public class TargetIndicator {
             if (aPart != bPart) return Integer.compare(aPart, bPart);
         }
         return 0;
-    }));
+    });
 }
