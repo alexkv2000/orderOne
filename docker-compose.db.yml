@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  # Сервис базы данных
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql_server # Имя контейнера, чтобы легко его найти
+    environment:
+      # Принимаем лицензию
+      ACCEPT_EULA: "Y"
+      # Задаем пароль для пользователя 'sa' (Должен быть сложным!)
+      SA_PASSWORD: "YourStrong@Passw0rd"
+      # Включаем английский язык (опционально)
+      MSSQL_LCID: 1033
+      MSSQL_COLLATION: SQL_Latin1_General_CP1_CI_AS
+    ports:
+      # Пробрасываем порт: <порт_на_вашем_компьютере>:<порт_в_контейнере>
+      - "1433:1433"
+    volumes:
+      # Сохраняем данные базы на диск, чтобы они не пропали при перезапуске
+      - sqlserver_data:/var/opt/mssql
+# Объявляем том (volume) для хранения данных
+volumes:
+  sqlserver_data:

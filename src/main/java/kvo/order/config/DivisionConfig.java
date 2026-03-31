@@ -11,22 +11,17 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
 public class DivisionConfig {
     private static final Logger logger = LoggerFactory.getLogger(DivisionConfig.class);
-    private static String SETTINGS_FILE = Paths.get("C:\\Users\\KvochkinAY\\IdeaProjects\\orderOne\\src\\main\\java\\kvo\\order\\config\\setting.txt").toString();
+
 //    private static String SETTINGS_FILE = Paths.get("config", "setting.txt").toString();
-    private volatile List<TargetIndicator.Division> divisions = Collections.emptyList();
-//    private static final String SETTINGS_FILE = new StringBuilder()
-////            .append(System.getProperty("user.dir"))
-////            .append(java.io.File.separator)
-//            .append("config")
-//            .append(java.io.File.separator)
-//            .append("setting.txt")
-//            .toString();
+    private final List<TargetIndicator.Division> divisions = new CopyOnWriteArrayList<>();
+    private static final String SETTINGS_FILE = Paths.get( "setting.properties").toString();
+
 
     // Инициализация при старте
     public DivisionConfig() {
@@ -41,7 +36,7 @@ public class DivisionConfig {
     // Загрузка из файла
     private synchronized void loadDivisions() {
         List<TargetIndicator.Division> newDivisions = new ArrayList<>();
-        System.out.println("DIR setting: " + SETTINGS_FILE);
+        logger.info("DIR setting: {}", SETTINGS_FILE);
         try (BufferedReader reader = new BufferedReader(new FileReader(SETTINGS_FILE))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -59,19 +54,20 @@ public class DivisionConfig {
                 }
             }
         } catch (IOException e) {
-            logger.error("Ошибка чтения файла settings.txt: {}", e.getMessage());
+            logger.error("Ошибка чтения файла setting.properties: {}", e.getMessage());
             // В случае ошибки оставляем старый список или добавляем дефолтные
             newDivisions.add(new TargetIndicator.Division("EMPTY"));
             newDivisions.add(new TargetIndicator.Division("error"));
         }
-        divisions = newDivisions;
+        divisions.clear();
+        divisions.addAll(newDivisions);
         logger.info("Загружены дивизионы: {}", divisions);
     }
 
     // Scheduled task: проверка каждые 15 минут
     @Scheduled(fixedRate = 60000) // 300000  5 минут = 900 секунд * 1000
     public void refreshDivisions() {
-        logger.info("Проверка обновлений в settings.txt...");
+        logger.info("Проверка обновлений в settings.properties...");
         loadDivisions();
     }
 }

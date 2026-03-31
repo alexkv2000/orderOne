@@ -22,7 +22,7 @@ public interface ErrorIndicatorRepository extends JpaRepository<ErrorIndicator, 
     List<ErrorIndicator> findByErrorMessageContaining(String reason);
 
     // Найти по дивизиону
-    List<ErrorIndicator> findByDivisionContaining(String division);
+    List<ErrorIndicator> findByDivisionsContaining(String division);
 
     // Проверить существование по номеру
     boolean existsByNumber(String number);
