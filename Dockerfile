@@ -1,8 +1,4 @@
 FROM debian:stable-slim
-LABEL authors="Kvochkin AY"
-LABEL description="Docker image for target indicators application"
-LABEL version="0.0.1"
-
 WORKDIR /app
 # 2. НАСТРАИВАЕМ РУССКИЙ ЯЗЫК В КОНТЕЙНЕРЕ
 # Обновляем списки пакетов, устанавливаем локали, генерируем русскую кодировку и чистим кэш
