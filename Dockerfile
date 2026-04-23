@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk-alpine
+FROM debian:stable-slim
 LABEL authors="Kvochkin AY"
 LABEL description="Docker image for target indicators application"
 LABEL version="0.0.1"
